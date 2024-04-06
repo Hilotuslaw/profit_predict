@@ -87,7 +87,7 @@ class PredictView(views.MethodView):
         x = np.array(day_n)
         re_rate_pre = fit_re_rate(y, x)
         if fit_re_rate_method:
-            re_rate_pre = revise_re_rate(re_rate_pre, y, x)
+            re_rate_pre = revise_re_rate(re_rate_pre, y.tolist(), x.tolist())
         re_rate_pre_360 = np.round(re_rate_pre[:361], 4)
         lt_pre_360 = np.round(re_rate_pre_360.cumsum(), 4)
 
