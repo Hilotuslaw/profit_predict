@@ -292,6 +292,6 @@ function create_div_plot() {
     div_plot.appendChild(div_row_4);
     div_plot.appendChild(div_row_5);
     div_plot.appendChild(div_row_6);
-    div_plot.style = "height: 100%; width: 100%";
+    div_plot.style = "height: 100%; width: 100%; overflow: scroll";
     return div_plot;
 }
