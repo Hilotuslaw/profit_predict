@@ -17,7 +17,7 @@ import multiprocessing
 
 
 # 并行工作进程数
-workers = 3  # 不在docker部署，使用：multiprocessing.cpu_count() * 2 + 1
+workers = multiprocessing.cpu_count() * 2 + 1
 
 # 监听内网端口5000
 bind = '0.0.0.0:5000'
