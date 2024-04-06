@@ -219,7 +219,7 @@
 
             // 按钮事件监听
             button_start_predict.onclick = function() {
-                if (flag_config_base && flag_config_predict_stage && flag_config_re_rate && flag_config_share_ratio) {
+                if (flag_config_base && flag_config_history_stage && flag_config_predict_stage && flag_config_re_rate && flag_config_share_ratio) {
                     data_config["config_name"] = config_person;  // 配置人
                     data_config["config_time"] = config_time;  // 配置时间
                     data_config["config_ip"] = returnCitySN["cip"];  // 配置人所在ip
@@ -336,6 +336,7 @@
                     config_arr_month_install_rate = config_upload['arr_month_install_rate'];
                     config_fit_re_rate_method = config_upload["fit_re_rate_method"];  // 留存拟合预测方法
                     flag_config_base = true;
+                    flag_config_history_stage = true;
                     flag_config_predict_stage = true;
                     flag_config_re_rate = true;
                     flag_config_share_ratio = true;
@@ -360,7 +361,7 @@
             // 基础配置标签点击
             li_config_base.onclick = function() {
                 active_fresh(li_config_base, li_arr);
-                if ((! profit_origin_clicked) && (! profit_day_clicked) && (! profit_month_clicked)) {
+                if ((! profit_origin_clicked) && (! profit_day_clicked) && (! profit_month_clicked) && (! trend_plot_clicked)) {
                     var iframe_choose = document.getElementById("info-frame");
                     iframe_choose.src = "config_base.html";
                 } else {
@@ -379,6 +380,7 @@
                     profit_origin_clicked = false;
                     profit_day_clicked = false;
                     profit_month_clicked = false;
+                    trend_plot_clicked = false;
                 }
                 iframe_choose.onload = function() {
                     // 如果页面已经配置过，再次返回该页面，将原配置刷新到页面
@@ -391,7 +393,6 @@
                         $("#info-frame").contents().find("td[data-x='5'][data-y='0']")[0].innerText = config_predict_start_time_tmp;
                         $("#info-frame").contents().find("td[data-x='6'][data-y='0']")[0].innerText = config_history_dau;
                         $("#info-frame").contents().find("td[data-x='7'][data-y='0']")[0].innerText = config_predict_end_time_tmp;
-                        // $("#info-frame").contents().find("td[data-x='8'][data-y='0']")[0].innerText = config_generate_bi;
                     }
 
                     // 配置结果提交
@@ -460,7 +461,7 @@
             // 历史安装标签配置
             li_config_history_stage.onclick = function() {
                 active_fresh(li_config_history_stage, li_arr);
-                if ((! profit_origin_clicked) && (! profit_day_clicked) && (! profit_month_clicked)) {
+                if ((! profit_origin_clicked) && (! profit_day_clicked) && (! profit_month_clicked) && (! trend_plot_clicked)) {
                     var iframe_choose = document.getElementById("info-frame");
                     iframe_choose.src = "config_history_stage.html";
                 } else {
@@ -479,6 +480,7 @@
                     profit_origin_clicked = false;
                     profit_day_clicked = false;
                     profit_month_clicked = false;
+                    trend_plot_clicked = false;
                 }
 
                 iframe_choose.onload = function() {
@@ -530,7 +532,7 @@
             // 预估时段配置标签点击
             li_config_predict_stage.onclick = function() {
                 active_fresh(li_config_predict_stage, li_arr);
-                if ((! profit_origin_clicked) && (! profit_day_clicked) && (! profit_month_clicked)) {
+                if ((! profit_origin_clicked) && (! profit_day_clicked) && (! profit_month_clicked) && (! trend_plot_clicked)) {
                     var iframe_choose = document.getElementById("info-frame");
                     iframe_choose.src = "config_predict_stage.html";
                 } else {
@@ -549,6 +551,7 @@
                     profit_origin_clicked = false;
                     profit_day_clicked = false;
                     profit_month_clicked = false;
+                    trend_plot_clicked = false;
                 }
                 iframe_choose.onload = function() {
                     // 刷新配置年月
@@ -621,7 +624,7 @@
             // 留存率配置标签点击
             li_config_re_rate.onclick = function() {
                 active_fresh(li_config_re_rate, li_arr);
-                if ((! profit_origin_clicked) && (! profit_day_clicked) && (! profit_month_clicked)) {
+                if ((! profit_origin_clicked) && (! profit_day_clicked) && (! profit_month_clicked) && (! trend_plot_clicked)) {
                     var iframe_choose = document.getElementById("info-frame");
                     iframe_choose.src = "config_re_rate.html";
                 } else {
@@ -640,6 +643,7 @@
                     profit_origin_clicked = false;
                     profit_day_clicked = false;
                     profit_month_clicked = false;
+                    trend_plot_clicked = false;
                 }
                 iframe_choose.onload = function() {
                     // 如果页面已经配置过，再次返回该页面，将原配置刷新到页面
@@ -755,7 +759,7 @@
             // 分成比例配置标签点击
             li_config_share_ratio.onclick = function() {
                 active_fresh(li_config_share_ratio, li_arr);
-                if ((! profit_origin_clicked) && (! profit_day_clicked) && (! profit_month_clicked)) {
+                if ((! profit_origin_clicked) && (! profit_day_clicked) && (! profit_month_clicked) && (! trend_plot_clicked)) {
                     var iframe_choose = document.getElementById("info-frame");
                     iframe_choose.src = "config_share_ratio.html";
                 } else {
@@ -774,6 +778,7 @@
                     profit_origin_clicked = false;
                     profit_day_clicked = false;
                     profit_month_clicked = false;
+                    trend_plot_clicked = false;
                 }
                 iframe_choose.onload = function() {
                     // 如果页面已经配置过，再次返回该页面，将原配置刷新到页面
@@ -1085,12 +1090,12 @@
                                     data.push(tmp);
                                 }
                                 table.setData(data);
-                                alert("INFO:修订数据展平再次预测成功!", function () {
+                                alert("INFO:修订数据明细再次预测成功!", function () {
                                     li_profit_day.click();
                                 });
                             },
                             error: function(data) {
-                                alert("ERROR:修订数据展平再次预测失败!")
+                                alert("ERROR:修订数据明细再次预测失败!")
                             }
                         });
                     }
@@ -1468,120 +1473,119 @@
                 }
 
                 if (data_response === null) {
-                var div_plot = document.createElement("div");
-                div_plot.id = "spreadsheet"
-                var container = document.getElementById("container_iframe");
-                container.appendChild(div_plot);
-                return;
+                    var div_plot = document.createElement("div");
+                    div_plot.id = "spreadsheet"
+                    var container = document.getElementById("container_iframe");
+                    container.appendChild(div_plot);
+                } else {
+                    var div_plot = create_div_plot();
+                    var container = document.getElementById("container_iframe");
+                    container.appendChild(div_plot);
+                    var elements_row = document.querySelectorAll('.row');
+                    elements_row.forEach((item) => {
+                        item.style = "display: flex; justify-content: space-between; margin-left: 2%; margin-top: 1%; margin-bottom: 2%;";
+                    });
+                    var elements_col = document.querySelectorAll('.div');
+                    elements_col.forEach((item) => {
+                        item.style = "width: 48%; height: 400px; padding: 10px; box-sizing: border-box;";
+                    });
+
+                    // 盈亏趋势分析
+                    var chart_profit_day = echarts.init(document.getElementById("profit_day"), 'dark');
+                    var title = "日度盈亏趋势分析";
+                    var legend_list = ["每日盈亏", "累计盈亏"];
+                    var x_list = data_response["format_date"];
+                    var y_list = [data_response["profit_daily"], data_response["profit_cumsum"]];
+                    plot_line(chart_profit_day, title, legend_list, x_list, y_list);
+
+                    var chart_profit_month = echarts.init(document.getElementById("profit_month"), 'dark');
+                    var title = "月度盈亏趋势分析";
+                    var legend_list = ["每月盈亏", "累计盈亏"];
+                    var x_list = data_response["format_month"];
+                    var y_list = [data_response["profit_month"], data_response["profit_cumsum_month"]];
+                    plot_line(chart_profit_month, title, legend_list, x_list, y_list);
+
+                    // 日新增、DAU分析
+                    var chart_install_dau_day = echarts.init(document.getElementById("install_dau_day"), 'dark');
+                    var title = "日度DAU趋势分析";
+                    var legend_list = ["日新增", "DAU"];
+                    var x_list = data_response["format_date"];
+                    var y_list = [data_response["new_install"], data_response["dau"]];
+                    plot_line(chart_install_dau_day, title, legend_list, x_list, y_list);
+
+                    var chart_install_dau_month = echarts.init(document.getElementById("install_dau_month"), 'dark');
+                    var title = "月度DAU趋势分析";
+                    var legend_list = ["月度平均日新增", "月度平均DAU"];
+                    var x_list = data_response["format_month"];
+                    var y_list = [data_response["new_install_month_avg"], data_response["dau_month_avg"]];
+                    plot_line(chart_install_dau_month, title, legend_list, x_list, y_list);
+
+                    // arpu、cpi分析
+                    var chart_arpu_cpi_day = echarts.init(document.getElementById("arpu_cpi_day"), 'dark');
+                    var title = "日度arpu及cpi趋势分析";
+                    var legend_list = ["arpu_in", "arpu_ad", "cpi"];
+                    var name_list_1 = ["arpu_in", "arpu_ad"];
+                    var name_list_2 = ["cpi"];
+                    var x_list = data_response["format_date"];
+                    var y_list_1 = [data_response["arpu_in"], data_response["arpu_ad"]];
+                    var y_list_2 = [data_response["cpi"]]
+                    plot_double_y_line(chart_arpu_cpi_day, title, legend_list, x_list, y_list_1, y_list_2, name_list_1, name_list_2)
+
+                    var chart_arpu_cpi_month = echarts.init(document.getElementById("arpu_cpi_month"), 'dark');
+                    var title = "月度arpu及cpi趋势分析";
+                    var legend_list = ["arpu_in", "arpu_ad", "cpi"];
+                    var name_list_1 = ["arpu_in", "arpu_ad"];
+                    var name_list_2 = ["cpi"];
+                    var x_list = data_response["format_month"];
+                    var y_list_1 = [data_response["arpu_in_month"], data_response["arpu_ad_month"]];
+                    var y_list_2 = [data_response["cpi_month"]]
+                    plot_double_y_line(chart_arpu_cpi_month, title, legend_list, x_list, y_list_1, y_list_2, name_list_1, name_list_2)
+
+                    // 收入分析
+                    var chart_revenue_day = echarts.init(document.getElementById("revenue_day"), 'dark');
+                    var title = "日度收入分析";
+                    var legend_list = ["分成后官方支付收入", "分成后本地支付收入", "分成后总内购收入", "广告收入", "分成后总收入"];
+                    var x_list = data_response["format_date"];
+                    var y_list = [data_response["official_income_aft_shared"], data_response["local_income_aft_shared"], data_response["income_in_aft_shared"], data_response["income_ad"], data_response["income_all_aft_shared"]];
+                    plot_line(chart_revenue_day, title, legend_list, x_list, y_list);
+
+                    var chart_revenue_month = echarts.init(document.getElementById("revenue_month"), 'dark');
+                    var title = "月度收入分析";
+                    var legend_list = ["分成后官方支付收入", "分成后本地支付收入", "分成后总内购收入", "广告收入", "分成后总收入"];
+                    var x_list = data_response["format_month"];
+                    var y_list = [data_response["official_income_aft_shared_month"], data_response["local_income_aft_shared_month"], data_response["income_in_aft_shared_month"], data_response["income_ad_month"], data_response["income_all_aft_shared_month"]];
+                    plot_line(chart_revenue_month, title, legend_list, x_list, y_list);
+
+                    // 流水分析
+                    var chart_revenue_flow_day = echarts.init(document.getElementById("revenue_flow_day"), 'dark');
+                    var title = "日度流水分析";
+                    var legend_list = ["总流水", "CP分成流水"];
+                    var x_list = data_response["format_date"];
+                    var y_list = [data_response["income_all"], data_response["income_all_cp_share"]];
+                    plot_stack_area(chart_revenue_flow_day, title, legend_list, x_list, y_list);
+
+                    var chart_revenue_flow_month = echarts.init(document.getElementById("revenue_flow_month"), 'dark');
+                    var title = "月度流水分析";
+                    var legend_list = ["总流水", "CP分成流水"];
+                    var x_list = data_response["format_month"];
+                    var y_list = [data_response["income_all_month"], data_response["income_all_cp_share_month"]];
+                    plot_stack_area(chart_revenue_flow_month, title, legend_list, x_list, y_list);
+
+                    // 支出分析
+                    var chart_cost_day = echarts.init(document.getElementById("cost_day"), 'dark');
+                    var title = "日度支出分析";
+                    var legend_list = ["投放支出", "每日支出", "市场支出"];
+                    var x_list = data_response["format_date"];
+                    var y_list = [data_response["cost_purchase"], data_response["cost_online_earning"], data_response["cost_market"]];
+                    plot_line(chart_cost_day, title, legend_list, x_list, y_list);
+
+                    var chart_cost_month = echarts.init(document.getElementById("cost_month"), 'dark');
+                    var title = "月度支出分析";
+                    var legend_list = ["投放支出", "每月支出", "市场支出"];
+                    var x_list = data_response["format_month"];
+                    var y_list = [data_response["cost_purchase_month"], data_response["cost_online_earning_month"], data_response["cost_market_month"]];
+                    plot_line(chart_cost_month, title, legend_list, x_list, y_list);
                 }
-                
-                var div_plot = create_div_plot();
-                var container = document.getElementById("container_iframe");
-                container.appendChild(div_plot);
-                var elements_row = document.querySelectorAll('.row');
-                elements_row.forEach((item) => {
-                    item.style = "display: flex; justify-content: space-between; margin-left: 2%; margin-top: 1%; margin-bottom: 2%;";
-                });
-                var elements_col = document.querySelectorAll('.div');
-                elements_col.forEach((item) => {
-                    item.style = "width: 48%; height: 400px; padding: 10px; box-sizing: border-box;";
-                });
-
-                // 盈亏趋势分析
-                var chart_profit_day = echarts.init(document.getElementById("profit_day"), 'dark');
-                var title = "日度盈亏趋势分析";
-                var legend_list = ["每日盈亏", "累计盈亏"];
-                var x_list = data_response["format_date"];
-                var y_list = [data_response["profit_daily"], data_response["profit_cumsum"]];
-                plot_line(chart_profit_day, title, legend_list, x_list, y_list);
-
-                var chart_profit_month = echarts.init(document.getElementById("profit_month"), 'dark');
-                var title = "月度盈亏趋势分析";
-                var legend_list = ["每月盈亏", "累计盈亏"];
-                var x_list = data_response["format_month"];
-                var y_list = [data_response["profit_month"], data_response["profit_cumsum_month"]];
-                plot_line(chart_profit_month, title, legend_list, x_list, y_list);
-
-                // 日新增、DAU分析
-                var chart_install_dau_day = echarts.init(document.getElementById("install_dau_day"), 'dark');
-                var title = "日度DAU趋势分析";
-                var legend_list = ["日新增", "DAU"];
-                var x_list = data_response["format_date"];
-                var y_list = [data_response["new_install"], data_response["dau"]];
-                plot_line(chart_install_dau_day, title, legend_list, x_list, y_list);
-
-                var chart_install_dau_month = echarts.init(document.getElementById("install_dau_month"), 'dark');
-                var title = "月度DAU趋势分析";
-                var legend_list = ["月度平均日新增", "月度平均DAU"];
-                var x_list = data_response["format_month"];
-                var y_list = [data_response["new_install_month_avg"], data_response["dau_month_avg"]];
-                plot_line(chart_install_dau_month, title, legend_list, x_list, y_list);
-
-                // arpu、cpi分析
-                var chart_arpu_cpi_day = echarts.init(document.getElementById("arpu_cpi_day"), 'dark');
-                var title = "日度arpu及cpi趋势分析";
-                var legend_list = ["arpu_in", "arpu_ad", "cpi"];
-                var name_list_1 = ["arpu_in", "arpu_ad"];
-                var name_list_2 = ["cpi"];
-                var x_list = data_response["format_date"];
-                var y_list_1 = [data_response["arpu_in"], data_response["arpu_ad"]];
-                var y_list_2 = [data_response["cpi"]]
-                plot_double_y_line(chart_arpu_cpi_day, title, legend_list, x_list, y_list_1, y_list_2, name_list_1, name_list_2)
-
-                var chart_arpu_cpi_month = echarts.init(document.getElementById("arpu_cpi_month"), 'dark');
-                var title = "月度arpu及cpi趋势分析";
-                var legend_list = ["arpu_in", "arpu_ad", "cpi"];
-                var name_list_1 = ["arpu_in", "arpu_ad"];
-                var name_list_2 = ["cpi"];
-                var x_list = data_response["format_month"];
-                var y_list_1 = [data_response["arpu_in_month"], data_response["arpu_ad_month"]];
-                var y_list_2 = [data_response["cpi_month"]]
-                plot_double_y_line(chart_arpu_cpi_month, title, legend_list, x_list, y_list_1, y_list_2, name_list_1, name_list_2)
-
-                // 收入分析
-                var chart_revenue_day = echarts.init(document.getElementById("revenue_day"), 'dark');
-                var title = "日度收入分析";
-                var legend_list = ["分成后官方支付收入", "分成后本地支付收入", "分成后总内购收入", "广告收入", "分成后总收入"];
-                var x_list = data_response["format_date"];
-                var y_list = [data_response["official_income_aft_shared"], data_response["local_income_aft_shared"], data_response["income_in_aft_shared"], data_response["income_ad"], data_response["income_all_aft_shared"]];
-                plot_line(chart_revenue_day, title, legend_list, x_list, y_list);
-
-                var chart_revenue_month = echarts.init(document.getElementById("revenue_month"), 'dark');
-                var title = "月度收入分析";
-                var legend_list = ["分成后官方支付收入", "分成后本地支付收入", "分成后总内购收入", "广告收入", "分成后总收入"];
-                var x_list = data_response["format_month"];
-                var y_list = [data_response["official_income_aft_shared_month"], data_response["local_income_aft_shared_month"], data_response["income_in_aft_shared_month"], data_response["income_ad_month"], data_response["income_all_aft_shared_month"]];
-                plot_line(chart_revenue_month, title, legend_list, x_list, y_list);
-
-                // 流水分析
-                var chart_revenue_flow_day = echarts.init(document.getElementById("revenue_flow_day"), 'dark');
-                var title = "日度流水分析";
-                var legend_list = ["总流水", "CP分成流水"];
-                var x_list = data_response["format_date"];
-                var y_list = [data_response["income_all"], data_response["income_all_cp_share"]];
-                plot_stack_area(chart_revenue_flow_day, title, legend_list, x_list, y_list);
-
-                var chart_revenue_flow_month = echarts.init(document.getElementById("revenue_flow_month"), 'dark');
-                var title = "月度流水分析";
-                var legend_list = ["总流水", "CP分成流水"];
-                var x_list = data_response["format_month"];
-                var y_list = [data_response["income_all_month"], data_response["income_all_cp_share_month"]];
-                plot_stack_area(chart_revenue_flow_month, title, legend_list, x_list, y_list);
-
-                // 支出分析
-                var chart_cost_day = echarts.init(document.getElementById("cost_day"), 'dark');
-                var title = "日度支出分析";
-                var legend_list = ["投放支出", "每日支出", "市场支出"];
-                var x_list = data_response["format_date"];
-                var y_list = [data_response["cost_purchase"], data_response["cost_online_earning"], data_response["cost_market"]];
-                plot_line(chart_cost_day, title, legend_list, x_list, y_list);
-
-                var chart_cost_month = echarts.init(document.getElementById("cost_month"), 'dark');
-                var title = "月度支出分析";
-                var legend_list = ["投放支出", "每月支出", "市场支出"];
-                var x_list = data_response["format_month"];
-                var y_list = [data_response["cost_purchase_month"], data_response["cost_online_earning_month"], data_response["cost_market_month"]];
-                plot_line(chart_cost_month, title, legend_list, x_list, y_list);
             };
             
             // 首次进入，点击
