@@ -249,7 +249,7 @@
                     data_config["fit_re_rate_method"] = config_fit_re_rate_method;
                     console.log(data_config);
                     $.ajax({
-                        url: "http://127.0.0.1:5000/predict",
+                        url: "http://159.75.37.178:5000/predict",
                         type: "post",
                         data: JSON.stringify(data_config),
                         contentType: "application/json",
@@ -1034,7 +1034,7 @@
                         data_config_new["predict_start_time"] = config_predict_start_time;
                         console.log(data_config_new);
                         $.ajax({
-                            url: "http://127.0.0.1:5000/repredict",
+                            url: "http://159.75.37.178:5000/repredict",
                             type: "post",
                             contentType: "application/json",
                             data: JSON.stringify(data_config_new),
