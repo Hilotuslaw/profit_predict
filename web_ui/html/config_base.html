@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>盈亏预估模型</title>
+        <script src="js/jquery.min.js"></script>
+        <link rel="stylesheet" href="css/bootstrap.min.css" crossorigin="anonymous">
+        <script src="js/bootstrap.min.js" crossorigin="anonymous"></script>
+        <script src="js/jexcel.js"></script>
+        <script src="js/jsuites.js"></script>
+        <link rel="stylesheet" href="css/jsuites.css" type="text/css" />
+        <link rel="stylesheet" href="css/jexcel.css" type="text/css" />
+    </head>
+    <body>
+        <div style="margin-left: 2%; margin-top: 15%;">
+            <h4 style="margin-left: 1%;">配置说明：</h4>
+            <ul style="font-size: 15px;color: rgb(0, 25, 247);">
+                <li >存量DAU的定义：历史安装在预测首日的DAU，不包括预测首日的新增</li>
+                <li >配置完成必须点击提交本页配置按钮，否则当前配置无法生效</li>
+            </ul>
+        </div>
+        <div id="spreadsheet" style="margin-left: 2.5%; margin-top: 2%;"></div>
+        <div style="margin-left: 2.5%; margin-top: 1%;">
+            <button type="button" class="btn btn-primary" id="config_submit" style="margin-top: 2%;">提交本页配置</button>
+        </div>
+    </body>
+
+    <script>
+        var data = [
+            ['', '', '', '', '', '', '', '']
+        ];
+
+        jspreadsheet(document.getElementById('spreadsheet'), {
+            data: data,
+            columns: [
+                { type: 'text', title:'项目', width:window.innerWidth/11.3 },
+                { type: 'text', title:'国家地区', width:window.innerWidth/11.3 },
+                { type: 'text', title:'配置人', width:window.innerWidth/11.3 },
+                { type: 'calendar', title:'配置时间', width:window.innerWidth/11.3 },
+                { type: 'calendar', title:'项目启动时间', width:window.innerWidth/11.3 },
+                { type: 'calendar', title:'预测起始日期', width:window.innerWidth/11.3 },
+                { type: 'text', title:'存量DAU', width:window.innerWidth/11.3 },
+                { type: 'calendar', title:'预测结束日期', width:window.innerWidth/11.3 },
+                // { type: 'dropdown', title:'是否生成BI看板', width:window.innerWidth/11.3, source:["否", "预测后直接同步", "修订展平再预测后同步"] }
+             ],
+            allowInsertRow: false,// 禁用插入行
+            allowDeleteRow: false, // 禁用删除
+        });
+    </script>
+</html>

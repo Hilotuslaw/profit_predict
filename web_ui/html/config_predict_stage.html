@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>盈亏预估模型</title>
+		<script src="js/jquery.min.js"></script>
+        <link rel="stylesheet" href="css/bootstrap.min.css" crossorigin="anonymous">
+        <script src="js/bootstrap.min.js" crossorigin="anonymous"></script>
+        <script src="js/jexcel.js"></script>
+        <script src="js/jsuites.js"></script>
+        <link rel="stylesheet" href="css/jsuites.css" type="text/css" />
+        <link rel="stylesheet" href="css/jexcel.css" type="text/css" />
+	</head>
+	<body>
+		<div style="margin-left: 2%; margin-top: 2%;">
+			<h4 style="margin-left: 1%;">配置说明：</h4>
+			<ul style="font-size: 15px;color: rgb(0, 25, 247);">
+				<li>预估年月自动生成，不需要填写</li>
+				<li>内购arpu、广告arpu、cpi均需配置具体数值，不可以配置非法字符</li>
+				<li>月度其它费用包括市场支出及网赚支出，总费用会被平均到该月每一天</li>
+				<li>日新增规则表示当月每一天日新增相对前一天的比例，默认为1</li>
+				<li>历史安装无需配置，直接使用项目真实的历史安装数据</li>
+				<li >时段内平均日新增所指时段是：当月未发生的预测时段，假设2024-06-21开始预测，则2024-06所指时段为：2024-06-21至2024-06-30</li>
+				<li >配置完成必须点击提交本页配置按钮，否则当前配置无法生效</li>
+			</ul>
+		</div>
+		<div id="spreadsheet" style="margin-left: 2.5%; margin-top: 1%;"></div>
+		<div style="margin-left: 2.5%; margin-top: 1%;">
+			<button type="button" class="btn btn-primary" id="config_submit">提交本页配置</button>
+			<button type="button" class="btn btn-primary" id="newRow" style="display: none;">新增一行</button>
+		</div>
+	</body>
+	<script>
+		window.onload = function() {
+			date_now = getNowFormatDate();
+			var month_now = date_now.substring(0,7);
+			var month_arr = getRangeAllMonth(date_now, "2099-12-31");
+			var index = 1;
+			var data = [
+			    [month_now, '0.0', '0.0', '0.0', '0.0', '0.0', '0', '1.0']
+			];
+			
+			var table = jspreadsheet(document.getElementById('spreadsheet'), {
+			    data:data,
+			    columns: [
+			        { type: 'text', title:'预估年月', width:window.innerWidth/10, readOnly:true },
+			        { type: 'text', title:'内购arpu', width:window.innerWidth/10 },
+			        { type: 'text', title:'广告arpu', width:window.innerWidth/10 },
+					{ type: 'text', title:'cpi', width:window.innerWidth/10 },
+					{ type: 'text', title:'月度每日支出', width:window.innerWidth/10 },
+					{ type: 'text', title:'月度市场支出', width:window.innerWidth/10 },
+					{ type: 'text', title:'时段内平均日新增', width:window.innerWidth/10 },
+					{ type: 'text', title:'日新增规则', width:window.innerWidth/10 }
+			     ]
+			});
+			var insertNewRowButton = document.getElementById("newRow");
+			insertNewRowButton.onclick = function () {
+				table.insertRow([month_arr[index], '0.0', '0.0', '0.0', '0.0', '0.0', '0', '1.0']);
+				index += 1;
+			};
+		};
+		
+		// 获取当前时间并格式化
+		var getNowFormatDate = function() {
+		    var date = new Date();
+		    var year = date.getFullYear();
+		    var month = date.getMonth() + 1;
+		    var d = date.getDate();
+		    if(month<10){
+		        month = "0" + month;
+		    };
+		    if(d<10){
+		        d = "0" + d;
+		    };
+		    return year + "-" + month + "-" + d;
+		};
+		
+		// 计算一段时间内的所有月份
+		var getRangeAllMonth = function(start, end) {
+			var getDate = function(datestr) {
+				var temp = datestr.split("-");
+				var date = new Date(temp[0], Number(temp[1])-1, temp[2]);
+				return date;
+			};
+			var startTime = getDate(start);
+			var endTime = getDate(end);
+			var dateArr = [];
+			while ((endTime.getTime() - startTime.getTime()) >= 0) {
+				var year = startTime.getFullYear();
+				var month = startTime.getMonth() + 1;
+				month = month.toString().length == 1 ? "0" + month.toString() : month;
+				var day = startTime.getDate().toString().length == 1 ? "0" + startTime.getDate() : startTime.getDate();
+				dateArr.push(year + "-" + month);
+				startTime.setDate(startTime.getDate() + 1);
+			};
+			return Array.from(new Set(dateArr));
+		};
+	</script>
+</html>

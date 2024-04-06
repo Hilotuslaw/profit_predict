@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>盈亏预估模型</title>
+		<script src="js/jquery.min.js"></script>
+        <link rel="stylesheet" href="css/bootstrap.min.css" crossorigin="anonymous">
+        <script src="js/bootstrap.min.js" crossorigin="anonymous"></script>
+        <script src="js/jexcel.js"></script>
+        <script src="js/jsuites.js"></script>
+        <link rel="stylesheet" href="css/jsuites.css" type="text/css" />
+        <link rel="stylesheet" href="css/jexcel.css" type="text/css" />
+	</head>
+	<body>
+		<div style="margin-left: 2%; margin-top: 15%;">
+			<h4 style="margin-left: 1%;">配置说明：</h4>
+			<ul style="font-size: 15px;color: rgb(0, 25, 247);">
+				<li>官方支付占比及官方分成比例无需配置，其中官方分成比例默认0.3</li>
+				<li>CP分成比例默认为0，分成的基数是总流水</li>
+				<li>注意，分成比例指的是分出去的比例，分成后收入使用(1-分成比例)计算</li>
+				<li >配置完成必须点击提交本页配置按钮，否则当前配置无法生效</li>
+			</ul>
+		</div>
+		<div id="spreadsheet" style="margin-left: 2.5%; margin-top: 2%;"></div>
+		<div style="margin-left: 2.5%; margin-top: 2%;">
+			<button type="button" class="btn btn-primary" id="config_submit">提交本页配置</button>
+		</div>
+	</body>
+	
+	<script>
+		var data = [
+		    ['0.0', '=1-A1', '0.0', '0.3', '0.0']
+		];
+		jspreadsheet(document.getElementById('spreadsheet'), {
+		    data:data,
+		    columns: [
+				{ type: 'text', title:'本地支付占比', width:window.innerWidth/10 },
+				{ type: 'text', title:'官方支付占比', width:window.innerWidth/10, readOnly:true },
+		        { type: 'text', title:'本地支付分成比例', width:window.innerWidth/10 },
+		        { type: 'text', title:'官方支付分成比例', width:window.innerWidth/10 },
+				{ type: 'text', title:'CP分成比例', width:window.innerWidth/10 },
+		     ],
+			allowInsertRow: false,// 禁用插入行
+			allowDeleteRow: false, // 禁用删除
+		});
+	</script>
+</html>

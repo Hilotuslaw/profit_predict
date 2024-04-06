@@ -1,0 +1,1616 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>盈亏预估模型</title>
+        <script src="js/jquery.min.js"></script>
+        <link rel="stylesheet" href="css/bootstrap.min.css" crossorigin="anonymous">
+        <script src="js/bootstrap.min.js" crossorigin="anonymous"></script>
+        <script src="js/jexcel.js"></script>
+        <script src="js/jsuites.js"></script>
+        <script src="http://pv.sohu.com/cityjson?ie=utf-8"></script>
+        <link rel="stylesheet" href="css/jsuites.css" type="text/css"/>
+        <link rel="stylesheet" href="css/jexcel.css" type="text/css"/>
+        <link href="https://fonts.loli.net/icon?family=Material+Icons" rel="stylesheet">
+        <link rel="shortcut icon" href="img/profit_predict.ico"/>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+            }
+            html,
+            body {
+                width: 100%;
+                height: 100%;
+            }
+            .container {
+                width: 100%;
+                height: 95%;
+            }
+            .top_nav ul {
+                list-style-type: none;
+                margin: 0;
+                padding: 0;
+                overflow: hidden;
+                border: 1px solid #e7e7e7;
+                background-color: #f3f3f3;
+            }
+            .top_nav ul li {
+                float: left;
+            }
+            .top_nav ul li p {
+                display: block;
+                color: black;
+                text-align: center;
+                padding-left: 14px;
+                padding-right: 14px;
+                padding-top: 16px;
+                padding-bottom: 16px;
+                text-decoration: none;
+                background-color: rgb(212, 212, 212);
+                font-weight: bolder;
+                margin: 0;
+            }
+            .top_nav ul li span {
+                color: #0004ff; 
+                padding: 14px 16px; 
+                font-size: large;
+                margin: 0;
+            }
+            .top_nav ul button {
+                float: right;
+            }
+            .top_nav ul button p {
+                display: block;
+                color: rgb(255, 255, 255);
+                text-align: center;
+                padding-left: 14px;
+                padding-right: 14px;
+                padding-top: 16px;
+                padding-bottom: 16px;
+                text-decoration: none;
+                background-color: rgba(51, 122, 183);
+                font-weight: bolder;
+                margin: 0;
+            }
+            .top_nav ul button p:hover {
+                display: block;
+                color: rgb(255, 255, 255);
+                text-align: center;
+                padding-left: 14px;
+                padding-right: 14px;
+                padding-top: 16px;
+                padding-bottom: 16px;
+                text-decoration: none;
+                background-color: rgb(2, 58, 107);
+                font-weight: bolder;
+                margin: 0;
+            }
+        </style>
+        <script src="js/echarts.js"></script>
+    </head>
+    <body style="overflow-y: auto">
+        <div class="top_nav">
+            <ul>
+                <li><p id="FLAG-1">基础配置未完成</p></li>
+                <li><span class="glyphicon glyphicon-arrow-right" aria-hidden="true"></span></li>
+                <li><p id="FLAG-2">安装配置未完成</p></li>
+                <li><span class="glyphicon glyphicon-arrow-right" aria-hidden="true"></span></li>
+                <li><p id="FLAG-3">时段配置未完成</p></li>
+                <li><span class="glyphicon glyphicon-arrow-right" aria-hidden="true"></span></li>
+                <li><p id="FLAG-4">留存配置未完成</p></li>
+                <li><span class="glyphicon glyphicon-arrow-right" aria-hidden="true"></span></li>
+                <li><p id="FLAG-5">分成配置未完成</p></li>
+                <button id="upload_config"><p >导入配置</p></button>
+                <button id="download_config"><p >导出配置</p></button>
+                <button id="start_predict"><p >开始预测</p></button>
+                <input type="file" accept="application/json" id="input_json" style="display: none;">
+
+              </ul>
+        </div>
+        <div class="container" id="container_iframe">
+            <iframe src="./config_base.html" id="info-frame" width="100%" height="100%" allowfullscreen="true" frameBorder="0px" scrolling="no"></iframe>
+        </div>
+        <nav class="navbar navbar-default navbar-fixed-bottom">
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                  <ul class="nav navbar-nav">
+                    <li id="config_base"><a >基础配置</a></li>
+                    <li id="config_history_stage"><a >安装配置</a></li>
+                    <li id="config_predict_stage"><a >时段配置</a></li>
+                    <li id="config_re_rate"><a >留存配置</a></li>
+                    <li id="config_share_ratio"><a >分成配置</a></li>
+                    <li id="profit_origin"><a >数据明细</a></li>
+                    <li id="profit_day"><a >日度盈亏</a></li>
+                    <li id="profit_month"><a >月度盈亏</a></li>
+                    <li id="trend_plot"><a >数据趋势</a></li>
+                  </ul>
+          </div>
+        </nav>
+    </body>
+    <script src="./js/utils.js"></script>
+    <script src="./js/plot.js"></script>
+    <script>
+        window.onload = function() {
+            window.alert = alert;
+            
+            // 首次加载，刷新iframe的src
+            var iframe_choose = document.getElementById("info-frame");
+
+            // 配置变量存储
+            var program = "";  // 项目
+            var country = "";  // 国家
+            var config_person = "";  // 配置人
+            var config_time_tmp = "";  // 配置时间副本
+            var config_time = "";  // 配置时间
+            var config_program_start_time_tmp = "";  // 项目启动时间副本
+            var config_program_start_time = "";  // 项目启动时间
+            var config_predict_start_time_tmp = "";  // 预测起始日期副本
+            var config_predict_start_time = "";  // 预测起始日期
+            var config_history_dau = "";  // 存量DAU
+            var config_predict_end_time_tmp = "";  // 预测结束时间副本
+            var config_predict_end_time = "";  // 预测结束时间
+            var config_arr_month_history = new Array();  // 历史安装年月
+            var config_arr_date_history = new Array();  // 历史安装月当月天数
+            var config_arr_date_history_real = new Array();  // 历史安装当月实际安装天数
+            var config_arr_month_install_rate = new Array();  // 历史当月安装占比
+            var config_arr_month = new Array();  // 预测年月数组
+            var config_arr_date = new Array();  // 预测年月日数组
+            var config_arr_arpu_in = new Array();  // 内购arpu数组
+            var config_arr_arpu_ad = new Array();  // 广告arpu数组
+            var config_arr_cpi = new Array();  // cpi数组
+            var config_arr_cost_online_earning = new Array();  // 网赚支出
+            var config_arr_cost_market = new Array();  // 市场支出
+            var config_arr_new_install = new Array();  // 时段内首日量级
+            var config_arr_new_rule = new Array();  // 日新增规则
+            var config_arr_day_n = new Array();  // 第N日
+            var config_arr_re_rate = new Array();  // 留存率
+            var config_local_ratio = "";  // 本地支付占比
+            var config_local_share_ratio = "";  // 本地支付分成比例
+            var config_official_pay_share_ratio = "";  // 官方支付分成比例
+            var config_cp_share_ratio = "";  // CP分成比例
+            var config_fit_re_rate_method = false;  // 留存率拟合方式，false幂函数拟合，true修正幂函数拟合
+
+            // 配置结果存储
+            var data_config = {};
+
+            // 结果变量存储
+            var data_response = null;  // 预测结果
+
+            // 标签选项卡组
+            var li_config_base = document.getElementById("config_base");
+            var li_config_history_stage = document.getElementById("config_history_stage");
+            var li_config_predict_stage = document.getElementById("config_predict_stage");
+            var li_config_re_rate = document.getElementById("config_re_rate");
+            var li_config_share_ratio = document.getElementById("config_share_ratio");
+            var li_profit_origin = document.getElementById("profit_origin");
+            var li_profit_day = document.getElementById("profit_day");
+            var li_profit_month = document.getElementById("profit_month");
+            var li_trend_plot = document.getElementById("trend_plot");
+            var li_arr = new Array(li_config_base, li_config_history_stage, li_config_predict_stage, li_config_re_rate, li_config_share_ratio, li_profit_origin, li_profit_day, li_profit_month, li_trend_plot);
+
+
+            // 页面是否已配置
+            var flag_config_base = false;
+            var flag_config_history_stage = false;
+            var flag_config_predict_stage = false;
+            var flag_config_re_rate = false;
+            var flag_config_share_ratio = false;
+
+            // 盈亏看板标签是否点击
+            var profit_origin_clicked = false;
+            var profit_day_clicked = false;
+            var profit_month_clicked = false;
+            var trend_plot_clicked = false;
+
+            // 是否进行第一次预测
+            var isPredictFirst = false;
+
+            // FLAG
+            var flag_1 = document.getElementById("FLAG-1");
+            var flag_2 = document.getElementById("FLAG-2");
+            var flag_3 = document.getElementById("FLAG-3");
+            var flag_4 = document.getElementById("FLAG-4");
+            var flag_5 = document.getElementById("FLAG-5");
+
+            // 按钮
+            var button_start_predict = document.getElementById("start_predict");
+            var button_upload_config = document.getElementById("upload_config");
+            var button_download_config = document.getElementById("download_config");
+
+            // 按钮事件监听
+            button_start_predict.onclick = function() {
+                if (flag_config_base && flag_config_predict_stage && flag_config_re_rate && flag_config_share_ratio) {
+                    data_config["config_name"] = config_person;  // 配置人
+                    data_config["config_time"] = config_time;  // 配置时间
+                    data_config["config_ip"] = returnCitySN["cip"];  // 配置人所在ip
+                    data_config["game"] = program;  // 配置项目
+                    data_config["country"] = country;  // 配置国家
+                    data_config["program_start_time"] = config_program_start_time;  // 项目启动时间
+                    data_config["predict_start_time"] = config_predict_start_time;  // 预测起始日期
+                    data_config["history_dau"] = eval(config_history_dau);  // 存量DAU
+                    data_config["predict_end_time"] = config_predict_end_time;  // 预测结束时间
+                    data_config["arr_month_history"] = config_arr_month_history;  // 历史安装年月
+                    data_config["arr_date_history_real"] = config_arr_date_history_real;  // 当月安装天数
+                    data_config["arr_month_install_rate"] = config_arr_month_install_rate;  // 当月安装占比
+                    data_config["predict_year_month"] = config_arr_month;  // 预估年月
+                    data_config["arpu_in"] = parse_float_arr(config_arr_arpu_in);  // 内购arpu
+                    data_config["arpu_ad"] = parse_float_arr(config_arr_arpu_ad);  // 广告arpu
+                    data_config["cpi"] = parse_float_arr(config_arr_cpi);  // cpi
+                    data_config["cost_online_earning"] = parse_float_arr(config_arr_cost_online_earning);  // 网赚支出
+                    data_config["cost_market"] = parse_float_arr(config_arr_cost_market);  // 市场支出
+                    data_config["new_install"] = parse_int_arr(config_arr_new_install);  // 日新增
+                    data_config["new_rule"] = parse_float_arr(config_arr_new_rule);  // 日新增规则
+                    data_config["day_n"] = parse_int_arr(config_arr_day_n);  // 第N日
+                    data_config["re_rate"] = parse_float_arr(config_arr_re_rate);  // 留存率
+                    data_config["local_pay_ratio"] = parseFloat(config_local_ratio)==0 ? 1e-9 : parseFloat(config_local_ratio);  // 本地支付占比
+                    data_config["local_pay_share_ratio"] = parseFloat(config_local_share_ratio)==0 ? 1e-9 : parseFloat(config_local_share_ratio);  // 本地支付分成比例
+                    data_config["official_pay_share_ratio"] = parseFloat(config_official_pay_share_ratio)==0 ? 1e-9 : parseFloat(config_official_pay_share_ratio);  // 官方支付分成比例
+                    data_config["cp_share_ratio"] = parseFloat(config_cp_share_ratio)==0 ? 1e-9 : parseFloat(config_cp_share_ratio);  // CP分成比例
+                    data_config["fit_re_rate_method"] = config_fit_re_rate_method;
+                    console.log(data_config);
+                    $.ajax({
+                        url: "http://127.0.0.1:5000/predict",
+                        type: "post",
+                        data: JSON.stringify(data_config),
+                        contentType: "application/json",
+                        success: function(data) {
+                            data_response = JSON.parse(JSON.stringify(data))["predict_response"];
+                            isPredictFirst = true;
+                            console.log(data);
+                            alert("INFO:预测成功!");
+                        }
+                    });
+                } else {
+                    alert("ERROR:存在未提交配置！");
+                }
+            };
+
+            var button_download_config = document.getElementById("download_config");
+            button_download_config.onclick = function() {
+                var data_config_new = JSON.parse(JSON.stringify(data_config));
+                data_config_new['arr_date_history'] = config_arr_date_history;
+                saveJSON(data_config_new, "data_config.json");
+            };
+            // 导出配置
+            function saveJSON(data, filename) {
+                if (!isPredictFirst) {
+                    alert("ERROR:请先进行第一次预测再导出!");
+                    return;
+                }
+                if (!filename) filename = 'json.json'
+                if (typeof data === 'object') {
+                    data = JSON.stringify(data, undefined, 4)
+                }
+                var blob = new Blob([data], { type: 'text/json' });
+                var e = document.createEvent('MouseEvents');
+                var a = document.createElement('a');
+                a.download = filename;
+                a.href = window.URL.createObjectURL(blob);
+                a.dataset.downloadurl = ['text/json', a.download, a.href].join(':');
+                e.initMouseEvent('click', true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+                a.dispatchEvent(e);
+            }
+
+            // 导入配置
+            var button_upload_config = document.getElementById("upload_config");
+            var input_json_config = document.getElementById("input_json");
+            input_json_config.oninput = function() {
+                var reader = new FileReader();  // 新建一个FileReader
+                reader.readAsText(input_json_config.files[0], "UTF-8");  // 读取文件
+                reader.onload = function (evt) {  // 读取完文件之后会回来这里
+                    var fileString = evt.target.result;  // 读取文件内容
+                    var config_upload = JSON.parse(fileString);
+                    config_person = config_upload['config_name'];
+                    config_time_tmp = config_upload['config_time'].substring(8,10) + "/" + config_upload['config_time'].substring(5,7) + "/" + config_upload['config_time'].substring(0,4);
+                    config_ip = config_upload['config_ip'];
+                    program = config_upload['game'];
+                    country = config_upload['country'];
+                    config_predict_end_time_tmp = config_upload['predict_end_time'].substring(8,10) + "/" + config_upload['predict_end_time'].substring(5,7) + "/" + config_upload['predict_end_time'].substring(0,4);
+                    config_arr_month = config_upload['predict_year_month'];
+                    config_arr_arpu_in = config_upload['arpu_in'];
+                    config_arr_arpu_ad = config_upload['arpu_ad'];
+                    config_arr_cpi = config_upload['cpi'];
+                    config_arr_cost_online_earning = config_upload['cost_online_earning'];
+                    config_arr_cost_market = config_upload['cost_market'];
+                    config_arr_new_install = config_upload['new_install'];
+                    config_arr_new_rule = config_upload['new_rule'];
+                    config_arr_day_n = config_upload['day_n'];
+                    config_arr_re_rate = config_upload['re_rate'];
+                    config_local_ratio = config_upload['local_pay_ratio'].toFixed(3);
+                    config_local_share_ratio = config_upload['local_pay_share_ratio'].toFixed(3);
+                    config_official_pay_share_ratio = config_upload['official_pay_share_ratio'].toFixed(3);
+                    config_cp_share_ratio = config_upload['cp_share_ratio'].toFixed(3);
+                    // 配置提交
+                    config_time = config_upload['config_time'];  // 配置时间
+                    config_predict_end_time = config_upload['predict_end_time'];  // 预测结束时间
+                    var tmp = config_upload['program_start_time'].split("-")
+                    config_program_start_time_tmp = tmp[2]+"/"+tmp[1]+"/"+tmp[0];  // 项目启动时间
+                    config_program_start_time = config_upload['program_start_time']
+                    var tmp2 = config_upload['predict_start_time'].split("-")
+                    config_predict_start_time_tmp = tmp2[2]+"/"+tmp2[1]+"/"+tmp2[0];  // 预测起始日期
+                    config_predict_start_time = config_upload['predict_start_time']
+                    config_history_dau = config_upload['history_dau'];  // 存量DAU
+                    config_arr_month_history = config_upload['arr_month_history'];
+                    config_arr_date_history = config_upload['arr_date_history'];
+                    config_arr_date_history_real = config_upload['arr_date_history_real'];
+                    config_arr_month_install_rate = config_upload['arr_month_install_rate'];
+                    config_fit_re_rate_method = config_upload["fit_re_rate_method"];  // 留存拟合预测方法
+                    flag_config_base = true;
+                    flag_config_predict_stage = true;
+                    flag_config_re_rate = true;
+                    flag_config_share_ratio = true;
+                    flag_1.innerText = "基础配置已完成";
+                    flag_1.style.backgroundColor = "green";
+                    flag_2.innerText = "安装配置已完成";
+                    flag_2.style.backgroundColor = "green";
+                    flag_3.innerText = "时段配置已完成";
+                    flag_3.style.backgroundColor = "green";
+                    flag_4.innerText = "留存配置已完成";
+                    flag_4.style.backgroundColor = "green";
+                    flag_5.innerText = "分成配置已完成";
+                    flag_5.style.backgroundColor = "green";
+                    li_config_base.click();
+                    alert("INFO:配置解析成功！");
+                };
+            };
+            button_upload_config.onclick = function() {
+                input_json_config.click();
+            };
+
+            // 基础配置标签点击
+            li_config_base.onclick = function() {
+                active_fresh(li_config_base, li_arr);
+                if ((! profit_origin_clicked) && (! profit_day_clicked) && (! profit_month_clicked)) {
+                    var iframe_choose = document.getElementById("info-frame");
+                    iframe_choose.src = "config_base.html";
+                } else {
+                    var div_ss = document.getElementById("spreadsheet");
+                    div_ss.parentNode.removeChild(div_ss);
+                    var iframe_choose = document.createElement("iframe");
+                    iframe_choose.src = "config_base.html";
+                    iframe_choose.id = "info-frame";
+                    iframe_choose.width = "100%";
+                    iframe_choose.height = "100%";
+                    iframe_choose.allowFullscreen = "true";
+                    iframe_choose.frameBorder = "0px";
+                    iframe_choose.scrolling = "";
+                    var container = document.getElementById("container_iframe");
+                    container.appendChild(iframe_choose);
+                    profit_origin_clicked = false;
+                    profit_day_clicked = false;
+                    profit_month_clicked = false;
+                }
+                iframe_choose.onload = function() {
+                    // 如果页面已经配置过，再次返回该页面，将原配置刷新到页面
+                    if (flag_config_base) {
+                        $("#info-frame").contents().find("td[data-x='0'][data-y='0']")[0].innerText = program;
+                        $("#info-frame").contents().find("td[data-x='1'][data-y='0']")[0].innerText = country;
+                        $("#info-frame").contents().find("td[data-x='2'][data-y='0']")[0].innerText = config_person;
+                        $("#info-frame").contents().find("td[data-x='3'][data-y='0']")[0].innerText = config_time_tmp;
+                        $("#info-frame").contents().find("td[data-x='4'][data-y='0']")[0].innerText = config_program_start_time_tmp;
+                        $("#info-frame").contents().find("td[data-x='5'][data-y='0']")[0].innerText = config_predict_start_time_tmp;
+                        $("#info-frame").contents().find("td[data-x='6'][data-y='0']")[0].innerText = config_history_dau;
+                        $("#info-frame").contents().find("td[data-x='7'][data-y='0']")[0].innerText = config_predict_end_time_tmp;
+                        // $("#info-frame").contents().find("td[data-x='8'][data-y='0']")[0].innerText = config_generate_bi;
+                    }
+
+                    // 配置结果提交
+                    var config_submit = iframe_choose.contentWindow.document.getElementById("config_submit");
+                    config_submit.onclick = function() {
+                        var innerHTMLString = iframe_choose.contentWindow.document.getElementById("spreadsheet").innerHTML;
+                        var el = document.createElement("html");
+                        el.innerHTML = innerHTMLString;
+                        program = el.getElementsByTagName("td")[10].innerText;
+                        country = el.getElementsByTagName("td")[11].innerText;
+                        config_person = el.getElementsByTagName("td")[12].innerText;
+                        config_time_tmp = el.getElementsByTagName("td")[13].innerText;
+                        config_time = config_time_tmp.substring(6,10) + "-" + config_time_tmp.substring(3,5) + "-" + config_time_tmp.substring(0,2);
+                        config_program_start_time_tmp = el.getElementsByTagName("td")[14].innerText;
+                        config_program_start_time = config_program_start_time_tmp.substring(6,10) + "-" + config_program_start_time_tmp.substring(3,5) + "-" + config_program_start_time_tmp.substring(0,2);
+                        config_predict_start_time_tmp = el.getElementsByTagName("td")[15].innerText;
+                        config_predict_start_time = config_predict_start_time_tmp.substring(6,10) + "-" + config_predict_start_time_tmp.substring(3,5) + "-" + config_predict_start_time_tmp.substring(0,2);
+                        config_history_dau = el.getElementsByTagName("td")[16].innerText;
+                        config_predict_end_time_tmp = el.getElementsByTagName("td")[17].innerText;
+                        config_predict_end_time = config_predict_end_time_tmp.substring(6,10) + "-" + config_predict_end_time_tmp.substring(3,5) + "-" + config_predict_end_time_tmp.substring(0,2);
+                        // config_generate_bi = el.getElementsByTagName("td")[19].innerText;
+                        var date_now = config_predict_start_time;
+                        config_arr_month = getRangeAllMonth(date_now, config_predict_end_time);
+                        config_arr_date = getRangeAllDate(date_now, config_predict_end_time);
+                        // 历史安装年月、当月天数、当月安装天数
+                        if (config_predict_start_time.split('-')[2] === '01') {
+                            var tmp = getRangeAllMonth(config_program_start_time, config_predict_start_time);
+                            config_arr_month_history = tmp.slice(0, tmp.length-1);
+                        } else {
+                            config_arr_month_history = getRangeAllMonth(config_program_start_time, config_predict_start_time);
+                        }
+                        config_arr_date_history = new Array();  // 避免连续点击一直push到数组中
+                        config_arr_month_history.forEach((item)=>{
+                            config_arr_date_history.push(getCountDays(item+'-01'));
+                        })
+                        /*
+                        1、如果项目启动月与预测起始月相等，则历史只有一个月的数据
+                        2、如果预测起始日期为1号，且历史月份只有一个月
+                        3、如果预测起始日期为1号，且历史月份不只有一个月
+                        4、其他
+                        */
+                        config_arr_date_history_real = JSON.parse(JSON.stringify(config_arr_date_history));
+                        if (config_program_start_time.slice(0, 7) === config_predict_start_time.slice(0, 7)) {
+                            config_arr_date_history_real[0] = eval(config_predict_start_time.split('-')[2]) - eval(config_program_start_time.split('-')[2]);
+                        } else if ((config_predict_start_time.split('-')[2] === '01') && (config_arr_month_history.length === 1)) {
+                            config_arr_date_history_real[0] = getCountDays(config_arr_month_history[0]+'-01') - eval(config_program_start_time.split('-')[2]);
+                        } else if ((config_predict_start_time.split('-')[2] === '01') && (config_arr_month_history.length !== 1)) {
+                            // 最后一个月安装一整个月，不用调整
+                            config_arr_date_history_real[0] = getCountDays(config_arr_month_history[0]+'-01') - eval(config_program_start_time.split('-')[2]);
+                        } else {
+                            config_arr_date_history_real[0] = getCountDays(config_arr_month_history[0]+'-01') - eval(config_program_start_time.split('-')[2]);
+                            config_arr_date_history_real[config_arr_date_history_real.length-1] = eval(config_predict_start_time.split('-')[2]) - 1;
+                        }
+                        if ((config_predict_end_time > config_predict_start_time) && (config_predict_start_time >= config_program_start_time)) {
+                            flag_config_base = true;
+                            flag_1.innerText = "基础配置已完成";
+                            flag_1.style.backgroundColor = "green";
+                            alert("INFO:配置提交成功!");
+                        } else {
+                            alert("ERROR:预测结束时间小于预测开始时间!");
+                        }
+                    };
+                };
+            };
+
+            // 历史安装标签配置
+            li_config_history_stage.onclick = function() {
+                active_fresh(li_config_history_stage, li_arr);
+                if ((! profit_origin_clicked) && (! profit_day_clicked) && (! profit_month_clicked)) {
+                    var iframe_choose = document.getElementById("info-frame");
+                    iframe_choose.src = "config_history_stage.html";
+                } else {
+                    var div_ss = document.getElementById("spreadsheet");
+                    div_ss.parentNode.removeChild(div_ss);
+                    var iframe_choose = document.createElement("iframe");
+                    iframe_choose.src = "config_history_stage.html";
+                    iframe_choose.id = "info-frame";
+                    iframe_choose.width = "100%";
+                    iframe_choose.height = "100%";
+                    iframe_choose.allowFullscreen = "true";
+                    iframe_choose.frameBorder = "0px";
+                    iframe_choose.scrolling = "";
+                    var container = document.getElementById("container_iframe");
+                    container.appendChild(iframe_choose);
+                    profit_origin_clicked = false;
+                    profit_day_clicked = false;
+                    profit_month_clicked = false;
+                }
+
+                iframe_choose.onload = function() {
+                    // 刷新配置年月
+                    var insertNewRowButton = iframe_choose.contentWindow.document.getElementById("newRow");
+                    for (var _ in config_arr_month_history.slice(1, config_arr_month_history.length)) {
+                        insertNewRowButton.click();
+                    }
+                    for (var i=0; i<config_arr_month_history.length; i++) {
+                        $("#info-frame").contents().find(`td[data-x='0'][data-y='${i}']`)[0].innerText = config_arr_month_history[i];
+                        $("#info-frame").contents().find(`td[data-x='1'][data-y='${i}']`)[0].innerText = config_arr_date_history[i];
+                        $("#info-frame").contents().find(`td[data-x='2'][data-y='${i}']`)[0].innerText = config_arr_date_history_real[i];
+                    }
+
+                    // 如果页面已经配置过，再次返回该页面，将原配置刷新到页面
+                    if (flag_config_history_stage) {
+                        for (var i=0; i<config_arr_month_history.length; i++) {
+                            $("#info-frame").contents().find(`td[data-x='3'][data-y='${i}']`)[0].innerText = config_arr_month_install_rate[i];
+                        }
+                    }
+
+                    // 配置结果提交
+                    var config_submit = iframe_choose.contentWindow.document.getElementById("config_submit");
+                    config_submit.onclick = function() {
+                        var config_arr_month_install_rate_tmp = new Array();
+                        for (var i=0; i<config_arr_month_history.length; i++) {
+                            config_arr_month_install_rate_tmp.push($("#info-frame").contents().find(`td[data-x='3'][data-y='${i}']`)[0].innerText);
+                        }
+                        config_arr_month_install_rate = config_arr_month_install_rate_tmp;
+                        var isSuccess = true;
+                        config_arr_month_install_rate.forEach((item)=>{
+                            if (! /^\d+$/.test(item)) {
+                                isSuccess = false;
+                                return;
+                            }
+                        })
+                        if (isSuccess) {
+                            flag_config_history_stage = true;
+                            flag_2.innerText = "安装配置已完成";
+                            flag_2.style.backgroundColor = "green";
+                            alert("INFO:配置提交成功!");
+                        } else {
+                            alert("ERROR:配置了非整数值！");
+                        }
+                    };
+                };
+            };
+
+            // 预估时段配置标签点击
+            li_config_predict_stage.onclick = function() {
+                active_fresh(li_config_predict_stage, li_arr);
+                if ((! profit_origin_clicked) && (! profit_day_clicked) && (! profit_month_clicked)) {
+                    var iframe_choose = document.getElementById("info-frame");
+                    iframe_choose.src = "config_predict_stage.html";
+                } else {
+                    var div_ss = document.getElementById("spreadsheet");
+                    div_ss.parentNode.removeChild(div_ss);
+                    var iframe_choose = document.createElement("iframe");
+                    iframe_choose.src = "config_predict_stage.html";
+                    iframe_choose.id = "info-frame";
+                    iframe_choose.width = "100%";
+                    iframe_choose.height = "100%";
+                    iframe_choose.allowFullscreen = "true";
+                    iframe_choose.frameBorder = "0px";
+                    iframe_choose.scrolling = "";
+                    var container = document.getElementById("container_iframe");
+                    container.appendChild(iframe_choose);
+                    profit_origin_clicked = false;
+                    profit_day_clicked = false;
+                    profit_month_clicked = false;
+                }
+                iframe_choose.onload = function() {
+                    // 刷新配置年月
+                    var insertNewRowButton = iframe_choose.contentWindow.document.getElementById("newRow");
+                    for (var _ in config_arr_month.slice(1, config_arr_month.length)) {
+                        insertNewRowButton.click();
+                    }
+                    for (var i=0; i<config_arr_month.length; i++) {
+                        $("#info-frame").contents().find(`td[data-x='0'][data-y='${i}']`)[0].innerText = config_arr_month[i];
+                    }
+
+                    // 如果页面已经配置过，再次返回该页面，将原配置刷新到页面
+                    if (flag_config_predict_stage) {
+                        for (var i=0; i<config_arr_month.length; i++) {
+                            $("#info-frame").contents().find(`td[data-x='1'][data-y='${i}']`)[0].innerText = config_arr_arpu_in[i];
+                            $("#info-frame").contents().find(`td[data-x='2'][data-y='${i}']`)[0].innerText = config_arr_arpu_ad[i];
+                            $("#info-frame").contents().find(`td[data-x='3'][data-y='${i}']`)[0].innerText = config_arr_cpi[i];
+                            $("#info-frame").contents().find(`td[data-x='4'][data-y='${i}']`)[0].innerText = config_arr_cost_online_earning[i];
+                            $("#info-frame").contents().find(`td[data-x='5'][data-y='${i}']`)[0].innerText = config_arr_cost_market[i];
+                            $("#info-frame").contents().find(`td[data-x='6'][data-y='${i}']`)[0].innerText = config_arr_new_install[i];
+                            $("#info-frame").contents().find(`td[data-x='7'][data-y='${i}']`)[0].innerText = config_arr_new_rule[i];
+                        }
+                    }
+
+                    // 配置结果提交
+                    var config_submit = iframe_choose.contentWindow.document.getElementById("config_submit");
+                    config_submit.onclick = function() {
+                        var config_arr_arpu_in_tmp = new Array();
+                        var config_arr_arpu_ad_tmp = new Array();
+                        var config_arr_cpi_tmp = new Array();
+                        var config_arr_cost_online_earning_tmp = new Array();
+                        var config_arr_cost_market_tmp = new Array();
+                        var config_arr_new_install_tmp = new Array();
+                        var config_arr_new_rule_tmp = new Array();
+                        for (var i=0; i<config_arr_month.length; i++) {
+                            config_arr_arpu_in_tmp.push($("#info-frame").contents().find(`td[data-x='1'][data-y='${i}']`)[0].innerText);
+                            config_arr_arpu_ad_tmp.push($("#info-frame").contents().find(`td[data-x='2'][data-y='${i}']`)[0].innerText);
+                            config_arr_cpi_tmp.push($("#info-frame").contents().find(`td[data-x='3'][data-y='${i}']`)[0].innerText);
+                            config_arr_cost_online_earning_tmp.push($("#info-frame").contents().find(`td[data-x='4'][data-y='${i}']`)[0].innerText);
+                            config_arr_cost_market_tmp.push($("#info-frame").contents().find(`td[data-x='5'][data-y='${i}']`)[0].innerText);
+                            config_arr_new_install_tmp.push($("#info-frame").contents().find(`td[data-x='6'][data-y='${i}']`)[0].innerText);
+                            config_arr_new_rule_tmp.push($("#info-frame").contents().find(`td[data-x='7'][data-y='${i}']`)[0].innerText);
+                        }
+                        config_arr_arpu_in = config_arr_arpu_in_tmp;
+                        config_arr_arpu_ad = config_arr_arpu_ad_tmp;
+                        config_arr_cpi = config_arr_cpi_tmp;
+                        config_arr_cost_online_earning = config_arr_cost_online_earning_tmp;
+                        config_arr_cost_market = config_arr_cost_market_tmp;
+                        config_arr_new_install = config_arr_new_install_tmp;
+                        config_arr_new_rule = config_arr_new_rule_tmp;
+                        var isSuccess = true;
+                        for (var i=0; i<config_arr_arpu_in.length; i++) {
+                            if (isNaN(Number(config_arr_arpu_in[i])) || isNaN(Number(config_arr_arpu_ad[i])) || isNaN(Number(config_arr_cpi[i])) || isNaN(Number(config_arr_cost_online_earning[i])) || isNaN(Number(config_arr_cost_market[i])) || isNaN(Number(config_arr_new_install[i])) || isNaN(Number(config_arr_new_rule[i]))) {
+                                isSuccess = false;
+                                break;
+                            }
+                        }
+                        if (isSuccess) {
+                            flag_config_predict_stage = true;
+                            flag_3.innerText = "时段配置已完成";
+                            flag_3.style.backgroundColor = "green";
+                            alert("INFO:配置提交成功!");
+                        } else {
+                            alert("ERROR:配置了非数值！");
+                        }
+                    };
+                };
+            };
+
+            // 留存率配置标签点击
+            li_config_re_rate.onclick = function() {
+                active_fresh(li_config_re_rate, li_arr);
+                if ((! profit_origin_clicked) && (! profit_day_clicked) && (! profit_month_clicked)) {
+                    var iframe_choose = document.getElementById("info-frame");
+                    iframe_choose.src = "config_re_rate.html";
+                } else {
+                    var div_ss = document.getElementById("spreadsheet");
+                    div_ss.parentNode.removeChild(div_ss);
+                    var iframe_choose = document.createElement("iframe");
+                    iframe_choose.src = "config_re_rate.html";
+                    iframe_choose.id = "info-frame";
+                    iframe_choose.width = "100%";
+                    iframe_choose.height = "100%";
+                    iframe_choose.allowFullscreen = "true";
+                    iframe_choose.frameBorder = "0px";
+                    iframe_choose.scrolling = "";
+                    var container = document.getElementById("container_iframe");
+                    container.appendChild(iframe_choose);
+                    profit_origin_clicked = false;
+                    profit_day_clicked = false;
+                    profit_month_clicked = false;
+                }
+                iframe_choose.onload = function() {
+                    // 如果页面已经配置过，再次返回该页面，将原配置刷新到页面
+                    var arr_day_n = new Array(0, 1, 3, 7, 14, 30, 45, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360);
+                    if (flag_config_re_rate) {
+                        config_arr_day_n.forEach((item) => {
+                            if (item == "0") {
+                                return true;
+                            }
+                            var idx_1 = config_arr_day_n.indexOf(item);
+                            var idx_2 = arr_day_n.indexOf(item);
+                            $("#info-frame").contents().find(`td[data-x='1'][data-y='${idx_2}']`)[0].innerText = (config_arr_re_rate[idx_1] * 100).toFixed(2) + "%";
+                            iframe_choose.contentWindow.document.getElementById("refresh_chart").click();
+                        });
+                    }
+
+                    // 留存率拟合方式
+                    if (!config_fit_re_rate_method) {
+                        iframe_choose.contentWindow.document.getElementById("select_method").value = "幂函数拟合";
+                    } else {
+                        iframe_choose.contentWindow.document.getElementById("select_method").value = "修正幂函数拟合";
+                    }
+
+                    // 如果已经获取预测结果，将预测结果写到本页
+                    if (data_response !== null) {
+                        var config_re_rate_pre_360 = new Array();  // 预测360日留存率
+                        var config_lt_pre_360 = new Array();  // 预测360日LT
+                        console.log(data_response);
+                        var re_rate_pre_360 = data_response["re_rate_pre_360"];
+                        var lt_pre_360 = data_response["lt_pre_360"];
+                        arr_day_n.forEach((item) => {
+                            if (item == 0) {
+                                return true;
+                            }
+                            config_re_rate_pre_360.push(re_rate_pre_360[item]);
+                            config_lt_pre_360.push(lt_pre_360[item]);
+                        })
+                        for (var i=0; i<config_re_rate_pre_360.length; i++) {
+                            $("#info-frame").contents().find(`td[data-x='2'][data-y='${i+1}']`)[0].innerText = (config_re_rate_pre_360[i] * 100).toFixed(2) + "%";
+                            $("#info-frame").contents().find(`td[data-x='3'][data-y='${i+1}']`)[0].innerText = (config_lt_pre_360[i]).toFixed(4);
+                        }
+                    }
+
+                    // 点击导出预测明细
+                    var export_re_rate_pre = iframe_choose.contentWindow.document.getElementById("export_re_rate_pre");
+                    export_re_rate_pre.onclick = function() {
+                        // 组装JSON文件
+                        var export_data = new Array();
+                        for (var i=0; i<re_rate_pre_360.length; i++) {
+                            export_data.push({
+                                "day_n": i,
+                                "re_rate_pre": re_rate_pre_360[i],
+                                "lt_pre": lt_pre_360[i]
+                            });
+                        }
+                        // 将json转换为csv格式
+    	                var csv = jsonToCsv(export_data);
+    	                // msSaveOrOpenBlob为IE独有的属性，支持下载
+                        if (navigator.msSaveOrOpenBlob) {
+                            // IE调用msSaveorOpenBlob方法下载文件
+                            var fileName = "re_rate_pre_detail";
+                            var date = new Date();
+                            var createDate = date.Format("yyyy-MM-dd");
+                            fileName = fileName + createDate + ".csv";
+                            var blob = new Blob([csv]);
+                            navigator.msSaveOrOpenBlob(blob, fileName);
+                        } else {
+                            // Chrome及FireFox浏览器方法
+                            var fileName = "re_rate_pre_detail";
+                            var date = new Date();
+                            var createDate = date.Format("yyyy-MM-dd");
+                            fileName = fileName + createDate  + ".csv";
+                            csvDownload(csv, fileName);
+                        }
+                    };
+
+                    // 配置结果提交
+                    var config_submit = iframe_choose.contentWindow.document.getElementById("config_submit");
+                    config_submit.onclick = function() {
+                        var indexes = new Array(1, 3, 7, 14, 30, 45, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360);
+                        var x_tmp = ["0"];
+                        var y_tmp = ["1.0"];
+                        var end_index = 0;
+                        indexes.forEach((item) => {
+                            idx = indexes.indexOf(item)+1;
+                            try {
+                                if (typeof +eval($("#info-frame").contents().find(`td[data-x='1'][data-y='${idx}']`)[0].innerText.replace("%", "")) === 'number'
+                                &&
+                                !isNaN(+eval($("#info-frame").contents().find(`td[data-x='1'][data-y='${idx}']`)[0].innerText.replace("%", "")))) {
+                                    x_tmp.push(item);
+                                    y_tmp.push(Number($("#info-frame").contents().find(`td[data-x='1'][data-y='${idx}']`)[0].innerText.replace("%", "")) / 100);
+                                    end_index = idx;
+                                };
+                            } catch(e) {
+                                console.log("填充了非数值！")
+                            };
+                        });
+                        config_arr_day_n = x_tmp;
+                        config_arr_re_rate = y_tmp;
+                        var config_fit_re_rate_method_tmp = iframe_choose.contentWindow.document.getElementById("select_method").value
+                        config_fit_re_rate_method = config_fit_re_rate_method_tmp === "修正幂函数拟合"
+                        flag_config_re_rate = true;
+                        flag_4.innerText = "留存配置已完成";
+                        flag_4.style.backgroundColor = "green";
+                        data_config["day_n"] = parse_int_arr(config_arr_day_n);  // 第N日
+                        data_config["re_rate"] = parse_float_arr(config_arr_re_rate);  // 留存率
+                        data_config["fit_re_rate_method"] = config_fit_re_rate_method;  // 留存率拟合方法
+                        alert("INFO:配置提交成功!");
+                    };
+                };
+            };
+
+            // 分成比例配置标签点击
+            li_config_share_ratio.onclick = function() {
+                active_fresh(li_config_share_ratio, li_arr);
+                if ((! profit_origin_clicked) && (! profit_day_clicked) && (! profit_month_clicked)) {
+                    var iframe_choose = document.getElementById("info-frame");
+                    iframe_choose.src = "config_share_ratio.html";
+                } else {
+                    var div_ss = document.getElementById("spreadsheet");
+                    div_ss.parentNode.removeChild(div_ss);
+                    var iframe_choose = document.createElement("iframe");
+                    iframe_choose.src = "config_share_ratio.html";
+                    iframe_choose.id = "info-frame";
+                    iframe_choose.width = "100%";
+                    iframe_choose.height = "100%";
+                    iframe_choose.allowFullscreen = "true";
+                    iframe_choose.frameBorder = "0px";
+                    iframe_choose.scrolling = "";
+                    var container = document.getElementById("container_iframe");
+                    container.appendChild(iframe_choose);
+                    profit_origin_clicked = false;
+                    profit_day_clicked = false;
+                    profit_month_clicked = false;
+                }
+                iframe_choose.onload = function() {
+                    // 如果页面已经配置过，再次返回该页面，将原配置刷新到页面
+                    if (flag_config_share_ratio) {
+                        $("#info-frame").contents().find("td[data-x='0'][data-y='0']")[0].innerText = config_local_ratio;
+                        $("#info-frame").contents().find("td[data-x='2'][data-y='0']")[0].innerText = config_local_share_ratio;
+                        $("#info-frame").contents().find("td[data-x='3'][data-y='0']")[0].innerText = config_official_pay_share_ratio;
+                        $("#info-frame").contents().find("td[data-x='4'][data-y='0']")[0].innerText = config_cp_share_ratio;
+                    }
+
+                    // 配置结果提交
+                    var config_submit = iframe_choose.contentWindow.document.getElementById("config_submit");
+                    config_submit.onclick = function() {
+                        try{
+                            if (/^\d+.?\d+$/.test($("#info-frame").contents().find("td[data-x='0'][data-y='0']")[0].innerText)
+                            &&
+                            /^\d+.?\d+$/.test($("#info-frame").contents().find("td[data-x='2'][data-y='0']")[0].innerText)
+                            &&
+                            /^\d+.?\d+$/.test($("#info-frame").contents().find("td[data-x='3'][data-y='0']")[0].innerText)
+                            &&
+                            /^\d+.?\d+$/.test($("#info-frame").contents().find("td[data-x='4'][data-y='0']")[0].innerText)) {
+                                config_local_ratio = $("#info-frame").contents().find("td[data-x='0'][data-y='0']")[0].innerText;
+                                config_local_share_ratio = $("#info-frame").contents().find("td[data-x='2'][data-y='0']")[0].innerText;
+                                config_official_pay_share_ratio = $("#info-frame").contents().find("td[data-x='3'][data-y='0']")[0].innerText;
+                                config_cp_share_ratio = $("#info-frame").contents().find("td[data-x='4'][data-y='0']")[0].innerText;
+                                flag_config_share_ratio = true;
+                                flag_5.innerText = "分成配置已完成";
+                                flag_5.style.backgroundColor = "green";
+                                alert("INFO:配置提交成功!");
+                            } else {
+                                alert("ERROR:配置了非数值或百分数！");
+                            }
+                        }catch(e){
+                            alert("ERROR:配置了非数值或百分数！");
+                            console.log("填充了非数值！")
+                        }
+                    };
+                };
+            };
+
+            // 数据明细标签点击
+            li_profit_origin.onclick = function() {
+                active_fresh(li_profit_origin, li_arr);
+                if (profit_origin_clicked || profit_day_clicked || profit_month_clicked || trend_plot_clicked) {
+                    var div_ss = document.getElementById("spreadsheet");
+                    div_ss.parentNode.removeChild(div_ss);
+                    profit_origin_clicked = true;
+                    profit_day_clicked = false;
+                    profit_month_clicked = false;
+                    trend_plot_clicked = false;
+                } else {
+                    var iframe_choose = document.getElementById("info-frame");
+                    iframe_choose.parentNode.removeChild(iframe_choose);
+                    profit_origin_clicked = true;
+                    profit_day_clicked = false;
+                    profit_month_clicked = false;
+                    trend_plot_clicked = false
+                }
+                // 点击标签后不使用iframe，直接将数据写到本页
+                if (data_response === null) {
+                    var div_ss = document.createElement("div");
+                    div_ss.id = "spreadsheet"
+                    div_ss.style = "margin-left: 2%; margin-top: 1%; overflow: scroll";
+                    var container = document.getElementById("container_iframe");
+                    container.appendChild(div_ss);
+                } else{
+                    var response_arpu_ad = data_response["arpu_ad"];
+                    var response_arpu_in = data_response["arpu_in"];
+                    var response_cost_market = data_response["cost_market"];
+                    var response_cost_online_earning = data_response["cost_online_earning"];
+                    var response_cost_purchase = data_response["cost_purchase"];
+                    var response_cpi = data_response["cpi"];
+                    var response_date_serial = data_response["date_serial"];
+                    var response_dau = data_response["dau"];
+                    var response_format_date = data_response["format_date"];
+                    var response_income_ad = data_response["income_ad"];
+                    var response_income_all = data_response["income_all"];
+                    var response_income_all_cp_share = data_response["income_all_cp_share"];
+                    var response_income_all_aft_shared = data_response["income_all_aft_shared"];
+                    var response_income_in_aft_shared = data_response["income_in_aft_shared"];
+                    var response_local_income_aft_shared = data_response["local_income_aft_shared"];
+                    var response_new_install = data_response["new_install"];
+                    var response_official_income_aft_shared = data_response["official_income_aft_shared"];
+                    var response_profit_cumsum = data_response["profit_cumsum"];
+                    var response_profit_daily = data_response["profit_daily"];
+                    var div_ss = document.createElement("div");
+                    div_ss.id = "spreadsheet"
+                    div_ss.style = "margin-left: 2%; margin-top: 1%; overflow: scroll; margin-bottom: 2%";
+                    var container = document.getElementById("container_iframe");
+                    container.appendChild(div_ss);
+                    var data = new Array();
+                    for (var i=0; i<response_format_date.length; i++) {
+                        var tmp = new Array();
+                        tmp.push(String(response_format_date[i]));
+                        tmp.push(String(response_date_serial[i]));
+                        tmp.push(String(response_new_install[i]));
+                        tmp.push(String(response_dau[i]));
+                        tmp.push(String(response_arpu_in[i].toFixed(3)));
+                        tmp.push(String(response_arpu_ad[i].toFixed(3)));
+                        tmp.push(String(response_official_income_aft_shared[i]));
+                        tmp.push(String(response_local_income_aft_shared[i]));
+                        tmp.push(String(response_income_in_aft_shared[i]));
+                        tmp.push(String(response_income_ad[i]));
+                        tmp.push(String(response_income_all[i]));
+                        tmp.push(String(response_income_all_cp_share[i]));
+                        tmp.push(String(response_income_all_aft_shared[i]));
+                        tmp.push(String(response_cpi[i].toFixed(3)));
+                        tmp.push(String(response_cost_purchase[i]));
+                        tmp.push(String(response_cost_online_earning[i]));
+                        tmp.push(String(response_cost_market[i]));
+                        tmp.push(String(response_profit_daily[i]));
+                        tmp.push(String(response_profit_cumsum[i]));
+                        data.push(tmp);
+                    }
+                    var table = jspreadsheet(document.getElementById('spreadsheet'), {
+                        data:data,
+                        columns: [
+                            { type: 'text', title:'日期', width:100 },
+                            { type: 'text', title:'第N天', width:100 },
+                            { type: 'text', title:'日新增', width:100 },
+                            { type: 'text', title:'DAU', width:100 },
+                            { type: 'text', title:'内购arpu', width:100 },
+                            { type: 'text', title:'广告arpu', width:100 },
+                            { type: 'text', title:'分成后官方支付收入', width:150 },
+                            { type: 'text', title:'分成后本地支付收入', width:150 },
+                            { type: 'text', title:'总内购分成后', width:100 },
+                            { type: 'text', title:'广告收入', width:100 },
+                            { type: 'text', title:'总流水', width:100 },
+                            { type: 'text', title:'CP分成流水', width:100 },
+                            { type: 'text', title:'分成后总收入', width:100 },
+                            { type: 'text', title:'cpi', width:100 },
+                            { type: 'text', title:'投放支出', width:100 },
+                            { type: 'text', title:'每日支出', width:100 },
+                            { type: 'text', title:'市场支出', width:100 },
+                            { type: 'text', title:'每日盈亏', width:100 },
+                            { type: 'text', title:'累计盈亏', width:100 },
+                         ],
+                        toolbar:[
+                                {
+                                    type: 'i',
+                                    content: 'undo',
+                                    onclick: function() {
+                                        table.undo();
+                                    }
+                                },
+                                {
+                                    type: 'i',
+                                    content: 'redo',
+                                    onclick: function() {
+                                        table.redo();
+                                    }
+                                },
+                                {
+                                    type: 'i',
+                                    content: 'save',
+                                    onclick: function () {
+                                        table.download(true);
+                                    }
+                                },
+                                {
+                                    type: 'select',
+                                    k: 'font-family',
+                                    v: ['Arial','Verdana']
+                                },
+                                {
+                                    type: 'select',
+                                    k: 'font-size',
+                                    v: ['9px','10px','11px','12px','13px','14px','15px','16px','17px','18px','19px','20px']
+                                },
+                                {
+                                    type: 'i',
+                                    content: 'format_align_left',
+                                    k: 'text-align',
+                                    v: 'left'
+                                },
+                                {
+                                    type:'i',
+                                    content:'format_align_center',
+                                    k:'text-align',
+                                    v:'center'
+                                },
+                                {
+                                    type: 'i',
+                                    content: 'format_align_right',
+                                    k: 'text-align',
+                                    v: 'right'
+                                },
+                                {
+                                    type: 'i',
+                                    content: 'format_bold',
+                                    k: 'font-weight',
+                                    v: 'bold'
+                                },
+                                {
+                                    type: 'color',
+                                    content: 'format_color_text',
+                                    k: 'color'
+                                },
+                                {
+                                    type: 'color',
+                                    content: 'format_color_fill',
+                                    k: 'background-color'
+                                },
+                                {
+                                    type: 'i',
+                                    content: 'done',
+                                    onclick: repredict
+                                },
+                            ],
+                        tableOverflow: true,
+                        tableWidth: (window.screen.width-100).toString()+'px',
+                        tableHeight: (window.screen.height-255).toString()+'px',
+                        freezeColumns: 1
+                    });
+                    function repredict() {
+                        console.log("重新提交配置预测!");
+                        var modify_install = new Array();
+                        var modify_arpu_in = new Array();
+                        var modify_arpu_ad = new Array();
+                        var modify_cpi = new Array();
+                        var modify_cost_purchase = new Array();
+                        var modify_online_earning = new Array();
+                        var modify_cost_market = new Array();
+                        var modify_data = table.getData();
+                        for (var i=0; i<data_response["format_date"].length; i++) {
+                            modify_install.push(parseInt(modify_data[i][2]));
+                            modify_arpu_in.push(parseFloat(modify_data[i][4]));
+                            modify_arpu_ad.push(parseFloat(modify_data[i][5]));
+                            modify_cpi.push(parseFloat(modify_data[i][13]));
+                            modify_online_earning.push(parseFloat(modify_data[i][15]));
+                            modify_cost_market.push(parseFloat(modify_data[i][16]));
+                        }
+                        var data_config_new = {};
+                        data_config_new["config_name"] = data_config["config_name"];
+                        data_config_new["config_time"] = data_config["config_time"];
+                        data_config_new["config_ip"] = data_config["config_ip"];
+                        data_config_new["game"] = data_config["game"];
+                        data_config_new["country"] = data_config["country"];
+                        data_config_new["predict_end_time"] = data_config["predict_end_time"];
+                        data_config_new["arpu_in"] = modify_arpu_in;
+                        data_config_new["arpu_ad"] = modify_arpu_ad;
+                        data_config_new["cpi"] = modify_cpi;
+                        data_config_new["cost_online_earning"] = modify_online_earning;
+                        data_config_new["cost_market"] = modify_cost_market;
+                        data_config_new["new_install"] = modify_install;
+                        data_config_new["day_n"] = data_config["day_n"];
+                        data_config_new["re_rate"] = data_config["re_rate"];
+                        data_config_new["fit_re_rate_method"] = config_fit_re_rate_method;
+                        data_config_new["local_pay_ratio"] = data_config["local_pay_ratio"];
+                        data_config_new["local_pay_share_ratio"] = data_config["local_pay_share_ratio"];
+                        data_config_new["official_pay_share_ratio"] = data_config["official_pay_share_ratio"];
+                        data_config_new["cp_share_ratio"] = data_config["cp_share_ratio"];
+                        data_config_new["history_dau"] = eval(config_history_dau);
+                        data_config_new["arr_month_history"] = config_arr_month_history;
+                        data_config_new["arr_date_history_real"] = config_arr_date_history_real;
+                        data_config_new["arr_month_install_rate"] = config_arr_month_install_rate;
+                        data_config_new["program_start_time"] = config_program_start_time;
+                        data_config_new["predict_start_time"] = config_predict_start_time;
+                        console.log(data_config_new);
+                        $.ajax({
+                            url: "http://127.0.0.1:5000/repredict",
+                            type: "post",
+                            contentType: "application/json",
+                            data: JSON.stringify(data_config_new),
+                            success: function(data) {
+                                data_response = JSON.parse(JSON.stringify(data))["predict_response"];
+                                console.log(data_response);
+                                var response_arpu_ad = data_response["arpu_ad"];
+                                var response_arpu_in = data_response["arpu_in"];
+                                var response_cost_market = data_response["cost_market"];
+                                var response_cost_online_earning = data_response["cost_online_earning"];
+                                var response_cost_purchase = data_response["cost_purchase"];
+                                var response_cpi = data_response["cpi"];
+                                var response_date_serial = data_response["date_serial"];
+                                var response_dau = data_response["dau"];
+                                var response_format_date = data_response["format_date"];
+                                var response_income_ad = data_response["income_ad"];
+                                var response_income_all = data_response["income_all"];
+                                var response_income_all_cp_share = data_response["income_all_cp_share"];
+                                var response_income_all_aft_shared = data_response["income_all_aft_shared"];
+                                var response_income_in_aft_shared = data_response["income_in_aft_shared"];
+                                var response_local_income_aft_shared = data_response["local_income_aft_shared"];
+                                var response_new_install = data_response["new_install"];
+                                var response_official_income_aft_shared = data_response["official_income_aft_shared"];
+                                var response_profit_cumsum = data_response["profit_cumsum"];
+                                var response_profit_daily = data_response["profit_daily"];
+                                var data = new Array();
+                                for (var i=0; i<response_format_date.length; i++) {
+                                    var tmp = new Array();
+                                    tmp.push(String(response_format_date[i]));
+                                    tmp.push(String(response_date_serial[i]));
+                                    tmp.push(String(response_new_install[i]));
+                                    tmp.push(String(response_dau[i]));
+                                    tmp.push(String(response_arpu_in[i].toFixed(3)));
+                                    tmp.push(String(response_arpu_ad[i].toFixed(3)));
+                                    tmp.push(String(response_official_income_aft_shared[i]));
+                                    tmp.push(String(response_local_income_aft_shared[i]));
+                                    tmp.push(String(response_income_in_aft_shared[i]));
+                                    tmp.push(String(response_income_ad[i]));
+                                    tmp.push(String(response_income_all[i]));
+                                    tmp.push(String(response_income_all_cp_share[i]));
+                                    tmp.push(String(response_income_all_aft_shared[i]));
+                                    tmp.push(String(response_cpi[i].toFixed(3)));
+                                    tmp.push(String(response_cost_purchase[i]));
+                                    tmp.push(String(response_cost_online_earning[i]));
+                                    tmp.push(String(response_cost_market[i]));
+                                    tmp.push(String(response_profit_daily[i]));
+                                    tmp.push(String(response_profit_cumsum[i]));
+                                    data.push(tmp);
+                                }
+                                table.setData(data);
+                                alert("INFO:修订数据展平再次预测成功!", function () {
+                                    li_profit_day.click();
+                                });
+                            },
+                            error: function(data) {
+                                alert("ERROR:修订数据展平再次预测失败!")
+                            }
+                        });
+                    }
+                }
+            };
+
+            // 日度盈亏看板标签点击
+            li_profit_day.onclick = function() {
+                active_fresh(li_profit_day, li_arr);
+                if (profit_origin_clicked || profit_day_clicked || profit_month_clicked || trend_plot_clicked) {
+                    var div_ss = document.getElementById("spreadsheet");
+                    div_ss.parentNode.removeChild(div_ss);
+                    profit_origin_clicked = false;
+                    profit_day_clicked = true;
+                    profit_month_clicked = false;
+                    trend_plot_clicked = false;
+                } else {
+                    var iframe_choose = document.getElementById("info-frame");
+                    iframe_choose.parentNode.removeChild(iframe_choose);
+                    profit_origin_clicked = false;
+                    profit_day_clicked = true;
+                    profit_month_clicked = false;
+                    trend_plot_clicked = false;
+                };
+                // 点击标签后不使用iframe，直接将数据写到本页
+                if (data_response === null) {
+                    var div_ss = document.createElement("div");
+                    div_ss.id = "spreadsheet"
+                    div_ss.style = "margin-left: 2%; margin-top: 1%; overflow: scroll";
+                    var container = document.getElementById("container_iframe");
+                    container.appendChild(div_ss);
+                } else{
+                    var response_arpu_ad = data_response["arpu_ad"];
+                    var response_arpu_in = data_response["arpu_in"];
+                    var response_cost_market = data_response["cost_market"];
+                    var response_cost_online_earning = data_response["cost_online_earning"];
+                    var response_cost_purchase = data_response["cost_purchase"];
+                    var response_cpi = data_response["cpi"];
+                    var response_date_serial = data_response["date_serial"];
+                    var response_dau = data_response["dau"];
+                    var response_format_date = data_response["format_date"];
+                    var response_income_ad = data_response["income_ad"];
+                    var response_income_all = data_response["income_all"];
+                    var response_income_all_cp_share = data_response["income_all_cp_share"];
+                    var response_income_all_aft_shared = data_response["income_all_aft_shared"];
+                    var response_income_in_aft_shared = data_response["income_in_aft_shared"];
+                    var response_local_income_aft_shared = data_response["local_income_aft_shared"];
+                    var response_new_install = data_response["new_install"];
+                    var response_official_income_aft_shared = data_response["official_income_aft_shared"];
+                    var response_profit_cumsum = data_response["profit_cumsum"];
+                    var response_profit_daily = data_response["profit_daily"];
+                    var div_ss = document.createElement("div");
+                    div_ss.id = "spreadsheet"
+                    div_ss.style = "margin-left: 2%; margin-top: 1%; overflow: scroll; margin-bottom: 2%";
+                    var container = document.getElementById("container_iframe");
+                    container.appendChild(div_ss);
+                    var data = new Array();
+                    for (var i=0; i<response_format_date.length; i++) {
+                        var tmp = new Array();
+                        tmp.push(String(response_format_date[i]));
+                        tmp.push(String(response_date_serial[i]));
+                        tmp.push(String(response_profit_daily[i]));
+                        tmp.push(String(response_profit_cumsum[i]));
+                        tmp.push(String(response_new_install[i]));
+                        tmp.push(String(response_dau[i]));
+                        tmp.push(String(response_arpu_in[i].toFixed(3)));
+                        tmp.push(String(response_arpu_ad[i].toFixed(3)));
+                        tmp.push(String(response_official_income_aft_shared[i]));
+                        tmp.push(String(response_local_income_aft_shared[i]));
+                        tmp.push(String(response_income_in_aft_shared[i]));
+                        tmp.push(String(response_income_ad[i]));
+                        tmp.push(String(response_income_all[i]));
+                        tmp.push(String(response_income_all_cp_share[i]));
+                        tmp.push(String(response_income_all_aft_shared[i]));
+                        tmp.push(String(response_cpi[i].toFixed(3)));
+                        tmp.push(String(response_cost_purchase[i]));
+                        tmp.push(String(response_cost_online_earning[i]));
+                        tmp.push(String(response_cost_market[i]));
+                        data.push(tmp);
+                    }
+                    var table = jspreadsheet(document.getElementById('spreadsheet'), {
+                        data:data,
+                        columns: [
+                            { type: 'text', title:'日期', width:100 },
+                            { type: 'text', title:'第N天', width:100 },
+                            { type: 'text', title:'每日盈亏', width:100 },
+                            { type: 'text', title:'累计盈亏', width:100 },
+                            { type: 'text', title:'日新增', width:100 },
+                            { type: 'text', title:'DAU', width:100 },
+                            { type: 'text', title:'内购arpu', width:100 },
+                            { type: 'text', title:'广告arpu', width:100 },
+                            { type: 'text', title:'分成后官方支付收入', width:150 },
+                            { type: 'text', title:'分成后本地支付收入', width:150 },
+                            { type: 'text', title:'总内购分成后', width:100 },
+                            { type: 'text', title:'广告收入', width:100 },
+                            { type: 'text', title:'总流水', width:100 },
+                            { type: 'text', title:'CP分成流水', width:100 },
+                            { type: 'text', title:'分成后总收入', width:100 },
+                            { type: 'text', title:'cpi', width:100 },
+                            { type: 'text', title:'投放支出', width:100 },
+                            { type: 'text', title:'每日支出', width:100 },
+                            { type: 'text', title:'市场支出', width:100 },
+                         ],
+                        toolbar:[
+                                {
+                                    type: 'i',
+                                    content: 'undo',
+                                    onclick: function() {
+                                        table.undo();
+                                    }
+                                },
+                                {
+                                    type: 'i',
+                                    content: 'redo',
+                                    onclick: function() {
+                                        table.redo();
+                                    }
+                                },
+                                {
+                                    type: 'i',
+                                    content: 'save',
+                                    onclick: function () {
+                                        table.download(true);
+                                    }
+                                },
+                                {
+                                    type: 'select',
+                                    k: 'font-family',
+                                    v: ['Arial','Verdana']
+                                },
+                                {
+                                    type: 'select',
+                                    k: 'font-size',
+                                    v: ['9px','10px','11px','12px','13px','14px','15px','16px','17px','18px','19px','20px']
+                                },
+                                {
+                                    type: 'i',
+                                    content: 'format_align_left',
+                                    k: 'text-align',
+                                    v: 'left'
+                                },
+                                {
+                                    type:'i',
+                                    content:'format_align_center',
+                                    k:'text-align',
+                                    v:'center'
+                                },
+                                {
+                                    type: 'i',
+                                    content: 'format_align_right',
+                                    k: 'text-align',
+                                    v: 'right'
+                                },
+                                {
+                                    type: 'i',
+                                    content: 'format_bold',
+                                    k: 'font-weight',
+                                    v: 'bold'
+                                },
+                                {
+                                    type: 'color',
+                                    content: 'format_color_text',
+                                    k: 'color'
+                                },
+                                {
+                                    type: 'color',
+                                    content: 'format_color_fill',
+                                    k: 'background-color'
+                                },
+                            ],
+                        tableOverflow: true,
+                        tableWidth: (window.screen.width-100).toString()+'px',
+                        tableHeight: (window.screen.height-255).toString()+'px',
+                        freezeColumns: 1
+                    });
+                    table.setFooter([[
+                        'Total','-',SUMCOL(table, 2),'-','-','-','-','-',
+                        SUMCOL(table, 8),SUMCOL(table, 9),SUMCOL(table, 10),SUMCOL(table, 11),SUMCOL(table, 12),
+                        SUMCOL(table, 13),SUMCOL(table, 14),'-',SUMCOL(table, 16),SUMCOL(table, 17),SUMCOL(table, 18)
+                    ]]);
+                }
+            };
+
+            // 月度盈亏看板标签点击
+            li_profit_month.onclick = function() {
+                active_fresh(li_profit_month, li_arr);
+                if (profit_origin_clicked || profit_day_clicked || profit_month_clicked || trend_plot_clicked) {
+                    var div_ss = document.getElementById("spreadsheet");
+                    div_ss.parentNode.removeChild(div_ss);
+                    profit_origin_clicked = false;
+                    profit_month_clicked = true;
+                    profit_day_clicked = false;
+                    trend_plot_clicked = false;
+                } else {
+                    var iframe_choose = document.getElementById("info-frame");
+                    iframe_choose.parentNode.removeChild(iframe_choose);
+                    profit_origin_clicked = false;
+                    profit_month_clicked = true;
+                    profit_day_clicked = false;
+                    trend_plot_clicked = false;
+                }
+                // 点击标签后不使用iframe，直接将数据写到本页
+                if (data_response === null) {
+                    var div_ss = document.createElement("div");
+                    div_ss.id = "spreadsheet"
+                    div_ss.style = "margin-left: 2%; margin-top: 1%; overflow: scroll";
+                    var container = document.getElementById("container_iframe");
+                    container.appendChild(div_ss);
+                } else {
+                    var response_arpu_ad_month = data_response["arpu_ad_month"];
+                    var response_arpu_in_month = data_response["arpu_in_month"];
+                    var response_cost_market_month = data_response["cost_market_month"];
+                    var response_cost_online_earning_month = data_response["cost_online_earning_month"];
+                    var response_cost_purchase_month = data_response["cost_purchase_month"];
+                    var response_cpi_month = data_response["cpi_month"];
+                    var response_dau_month_avg = data_response["dau_month_avg"];
+                    var response_format_month = data_response["format_month"];
+                    var response_income_ad_month = data_response["income_ad_month"];
+                    var response_income_all_aft_shared_month = data_response["income_all_aft_shared_month"];
+                    var response_income_all_month = data_response["income_all_month"];
+                    var response_income_all_cp_share_month = data_response["income_all_cp_share_month"];
+                    var response_income_in_aft_shared_month = data_response["income_in_aft_shared_month"];
+                    var response_local_income_aft_shared_month = data_response["local_income_aft_shared_month"];
+                    var response_new_install_month_avg = data_response["new_install_month_avg"];
+                    var response_official_income_aft_shared_month = data_response["official_income_aft_shared_month"];
+                    var response_profit_cumsum_month = data_response["profit_cumsum_month"];
+                    var response_profit_daily_month = data_response["profit_month"];
+                    var div_ss = document.createElement("div");
+                    div_ss.id = "spreadsheet"
+                    div_ss.style = "margin-left: 2%; margin-top: 1%; overflow: scroll; margin-bottom: 2%";
+                    var container = document.getElementById("container_iframe");
+                    container.appendChild(div_ss);
+                    var data = new Array();
+                    for (var i=0; i<response_format_month.length; i++) {
+                        var tmp = new Array();
+                        tmp.push(String(response_format_month[i]));
+                        tmp.push(String(response_profit_daily_month[i]));
+                        tmp.push(String(response_profit_cumsum_month[i]));
+                        tmp.push(String(response_new_install_month_avg[i]));
+                        tmp.push(String(response_dau_month_avg[i]));
+                        tmp.push(String(response_arpu_in_month[i].toFixed(3)));
+                        tmp.push(String(response_arpu_ad_month[i].toFixed(3)));
+                        tmp.push(String(response_official_income_aft_shared_month[i]));
+                        tmp.push(String(response_local_income_aft_shared_month[i]));
+                        tmp.push(String(response_income_in_aft_shared_month[i]));
+                        tmp.push(String(response_income_ad_month[i]));
+                        tmp.push(String(response_income_all_month[i]));
+                        tmp.push(String(response_income_all_cp_share_month[i]));
+                        tmp.push(String(response_income_all_aft_shared_month[i]));
+                        tmp.push(String(response_cpi_month[i].toFixed(3)));
+                        tmp.push(String(response_cost_purchase_month[i]));
+                        tmp.push(String(response_cost_online_earning_month[i]));
+                        tmp.push(String(response_cost_market_month[i]));
+                        data.push(tmp);
+                    }
+                    var table = jspreadsheet(document.getElementById('spreadsheet'), {
+                        data:data,
+                        columns: [
+                            { type: 'text', title:'月度', width:100 },
+                            { type: 'text', title:'每月盈亏', width:100 },
+                            { type: 'text', title:'累计盈亏', width:100 },
+                            { type: 'text', title:'月度平均日新增', width:150 },
+                            { type: 'text', title:'月度平均DAU', width:100 },
+                            { type: 'text', title:'内购arpu', width:100 },
+                            { type: 'text', title:'广告arpu', width:100 },
+                            { type: 'text', title:'分成后官方支付收入', width:150 },
+                            { type: 'text', title:'分成后本地支付收入', width:150 },
+                            { type: 'text', title:'总内购分成后', width:100 },
+                            { type: 'text', title:'广告收入', width:100 },
+                            { type: 'text', title:'总流水', width:100 },
+                            { type: 'text', title:'CP分成流水', width:100 },
+                            { type: 'text', title:'分成后总收入', width:100 },
+                            { type: 'text', title:'cpi', width:100 },
+                            { type: 'text', title:'投放支出', width:100 },
+                            { type: 'text', title:'每月支出', width:100 },
+                            { type: 'text', title:'市场支出', width:100 },
+                         ],
+                        toolbar:[
+                                {
+                                    type: 'i',
+                                    content: 'undo',
+                                    onclick: function() {
+                                        table.undo();
+                                    }
+                                },
+                                {
+                                    type: 'i',
+                                    content: 'redo',
+                                    onclick: function() {
+                                        table.redo();
+                                    }
+                                },
+                                {
+                                    type: 'i',
+                                    content: 'save',
+                                    onclick: function () {
+                                        table.download(true);
+                                    }
+                                },
+                                {
+                                    type: 'select',
+                                    k: 'font-family',
+                                    v: ['Arial','Verdana']
+                                },
+                                {
+                                    type: 'select',
+                                    k: 'font-size',
+                                    v: ['9px','10px','11px','12px','13px','14px','15px','16px','17px','18px','19px','20px']
+                                },
+                                {
+                                    type: 'i',
+                                    content: 'format_align_left',
+                                    k: 'text-align',
+                                    v: 'left'
+                                },
+                                {
+                                    type:'i',
+                                    content:'format_align_center',
+                                    k:'text-align',
+                                    v:'center'
+                                },
+                                {
+                                    type: 'i',
+                                    content: 'format_align_right',
+                                    k: 'text-align',
+                                    v: 'right'
+                                },
+                                {
+                                    type: 'i',
+                                    content: 'format_bold',
+                                    k: 'font-weight',
+                                    v: 'bold'
+                                },
+                                {
+                                    type: 'color',
+                                    content: 'format_color_text',
+                                    k: 'color'
+                                },
+                                {
+                                    type: 'color',
+                                    content: 'format_color_fill',
+                                    k: 'background-color'
+                                },
+                            ],
+                        tableOverflow: true,
+                        tableWidth: (window.screen.width-100).toString()+'px',
+                        tableHeight: (window.screen.height-255).toString()+'px',
+                        freezeColumns: 1
+                    });
+                    table.setFooter([[
+                        'Total',SUMCOL(table, 1),'-','-','-','-','-',
+                        SUMCOL(table, 7),SUMCOL(table, 8),SUMCOL(table, 9),SUMCOL(table, 10),SUMCOL(table, 11),
+                        SUMCOL(table, 12),SUMCOL(table, 13),'-',SUMCOL(table, 15),SUMCOL(table, 16),SUMCOL(table, 17)
+                    ]]);
+                }
+            };
+
+            // 数据趋势标签点击
+            li_trend_plot.onclick = function() {
+                active_fresh(li_trend_plot, li_arr);
+                if (profit_origin_clicked || profit_day_clicked || profit_month_clicked || trend_plot_clicked) {
+                    var div_plot = document.getElementById("spreadsheet");
+                    div_plot.parentNode.removeChild(div_plot);
+                    profit_origin_clicked = false;
+                    profit_month_clicked = false;
+                    profit_day_clicked = false;
+                    trend_plot_clicked = true;
+                } else {
+                    var iframe_choose = document.getElementById("info-frame");
+                    iframe_choose.parentNode.removeChild(iframe_choose);
+                    profit_origin_clicked = false;
+                    profit_month_clicked = false;
+                    profit_day_clicked = false;
+                    trend_plot_clicked = true;
+                }
+
+                if (data_response === null) {
+                var div_plot = document.createElement("div");
+                div_plot.id = "spreadsheet"
+                var container = document.getElementById("container_iframe");
+                container.appendChild(div_plot);
+                return;
+                }
+                
+                var div_plot = create_div_plot();
+                var container = document.getElementById("container_iframe");
+                container.appendChild(div_plot);
+                var elements_row = document.querySelectorAll('.row');
+                elements_row.forEach((item) => {
+                    item.style = "display: flex; justify-content: space-between; margin-left: 2%; margin-top: 1%; margin-bottom: 2%;";
+                });
+                var elements_col = document.querySelectorAll('.div');
+                elements_col.forEach((item) => {
+                    item.style = "width: 48%; height: 400px; padding: 10px; box-sizing: border-box;";
+                });
+
+                // 盈亏趋势分析
+                var chart_profit_day = echarts.init(document.getElementById("profit_day"), 'dark');
+                var title = "日度盈亏趋势分析";
+                var legend_list = ["每日盈亏", "累计盈亏"];
+                var x_list = data_response["format_date"];
+                var y_list = [data_response["profit_daily"], data_response["profit_cumsum"]];
+                plot_line(chart_profit_day, title, legend_list, x_list, y_list);
+
+                var chart_profit_month = echarts.init(document.getElementById("profit_month"), 'dark');
+                var title = "月度盈亏趋势分析";
+                var legend_list = ["每月盈亏", "累计盈亏"];
+                var x_list = data_response["format_month"];
+                var y_list = [data_response["profit_month"], data_response["profit_cumsum_month"]];
+                plot_line(chart_profit_month, title, legend_list, x_list, y_list);
+
+                // 日新增、DAU分析
+                var chart_install_dau_day = echarts.init(document.getElementById("install_dau_day"), 'dark');
+                var title = "日度DAU趋势分析";
+                var legend_list = ["日新增", "DAU"];
+                var x_list = data_response["format_date"];
+                var y_list = [data_response["new_install"], data_response["dau"]];
+                plot_line(chart_install_dau_day, title, legend_list, x_list, y_list);
+
+                var chart_install_dau_month = echarts.init(document.getElementById("install_dau_month"), 'dark');
+                var title = "月度DAU趋势分析";
+                var legend_list = ["月度平均日新增", "月度平均DAU"];
+                var x_list = data_response["format_month"];
+                var y_list = [data_response["new_install_month_avg"], data_response["dau_month_avg"]];
+                plot_line(chart_install_dau_month, title, legend_list, x_list, y_list);
+
+                // arpu、cpi分析
+                var chart_arpu_cpi_day = echarts.init(document.getElementById("arpu_cpi_day"), 'dark');
+                var title = "日度arpu及cpi趋势分析";
+                var legend_list = ["arpu_in", "arpu_ad", "cpi"];
+                var name_list_1 = ["arpu_in", "arpu_ad"];
+                var name_list_2 = ["cpi"];
+                var x_list = data_response["format_date"];
+                var y_list_1 = [data_response["arpu_in"], data_response["arpu_ad"]];
+                var y_list_2 = [data_response["cpi"]]
+                plot_double_y_line(chart_arpu_cpi_day, title, legend_list, x_list, y_list_1, y_list_2, name_list_1, name_list_2)
+
+                var chart_arpu_cpi_month = echarts.init(document.getElementById("arpu_cpi_month"), 'dark');
+                var title = "月度arpu及cpi趋势分析";
+                var legend_list = ["arpu_in", "arpu_ad", "cpi"];
+                var name_list_1 = ["arpu_in", "arpu_ad"];
+                var name_list_2 = ["cpi"];
+                var x_list = data_response["format_month"];
+                var y_list_1 = [data_response["arpu_in_month"], data_response["arpu_ad_month"]];
+                var y_list_2 = [data_response["cpi_month"]]
+                plot_double_y_line(chart_arpu_cpi_month, title, legend_list, x_list, y_list_1, y_list_2, name_list_1, name_list_2)
+
+                // 收入分析
+                var chart_revenue_day = echarts.init(document.getElementById("revenue_day"), 'dark');
+                var title = "日度收入分析";
+                var legend_list = ["分成后官方支付收入", "分成后本地支付收入", "分成后总内购收入", "广告收入", "分成后总收入"];
+                var x_list = data_response["format_date"];
+                var y_list = [data_response["official_income_aft_shared"], data_response["local_income_aft_shared"], data_response["income_in_aft_shared"], data_response["income_ad"], data_response["income_all_aft_shared"]];
+                plot_line(chart_revenue_day, title, legend_list, x_list, y_list);
+
+                var chart_revenue_month = echarts.init(document.getElementById("revenue_month"), 'dark');
+                var title = "月度收入分析";
+                var legend_list = ["分成后官方支付收入", "分成后本地支付收入", "分成后总内购收入", "广告收入", "分成后总收入"];
+                var x_list = data_response["format_month"];
+                var y_list = [data_response["official_income_aft_shared_month"], data_response["local_income_aft_shared_month"], data_response["income_in_aft_shared_month"], data_response["income_ad_month"], data_response["income_all_aft_shared_month"]];
+                plot_line(chart_revenue_month, title, legend_list, x_list, y_list);
+
+                // 流水分析
+                var chart_revenue_flow_day = echarts.init(document.getElementById("revenue_flow_day"), 'dark');
+                var title = "日度流水分析";
+                var legend_list = ["总流水", "CP分成流水"];
+                var x_list = data_response["format_date"];
+                var y_list = [data_response["income_all"], data_response["income_all_cp_share"]];
+                plot_stack_area(chart_revenue_flow_day, title, legend_list, x_list, y_list);
+
+                var chart_revenue_flow_month = echarts.init(document.getElementById("revenue_flow_month"), 'dark');
+                var title = "月度流水分析";
+                var legend_list = ["总流水", "CP分成流水"];
+                var x_list = data_response["format_month"];
+                var y_list = [data_response["income_all_month"], data_response["income_all_cp_share_month"]];
+                plot_stack_area(chart_revenue_flow_month, title, legend_list, x_list, y_list);
+
+                // 支出分析
+                var chart_cost_day = echarts.init(document.getElementById("cost_day"), 'dark');
+                var title = "日度支出分析";
+                var legend_list = ["投放支出", "每日支出", "市场支出"];
+                var x_list = data_response["format_date"];
+                var y_list = [data_response["cost_purchase"], data_response["cost_online_earning"], data_response["cost_market"]];
+                plot_line(chart_cost_day, title, legend_list, x_list, y_list);
+
+                var chart_cost_month = echarts.init(document.getElementById("cost_month"), 'dark');
+                var title = "月度支出分析";
+                var legend_list = ["投放支出", "每月支出", "市场支出"];
+                var x_list = data_response["format_month"];
+                var y_list = [data_response["cost_purchase_month"], data_response["cost_online_earning_month"], data_response["cost_market_month"]];
+                plot_line(chart_cost_month, title, legend_list, x_list, y_list);
+            };
+            
+            // 首次进入，点击
+            var li_ = document.getElementById("config_base");
+            li_.click();
+
+            // 对Date的扩展，将 Date 转化为指定格式的String
+            // (new Date()).Format("yyyy-MM-dd HH:mm:ss.S") ==> 2006-07-02 08:09:04.423
+            // (new Date()).Format("yyyy-M-d H:m:s.S")      ==> 2006-7-2 8:9:4.18
+            Date.prototype.Format = function(fmt) { //author: meizz
+              var o = {
+                "M+" : this.getMonth()+1,                 //月份
+                "d+" : this.getDate(),                    //日
+                "H+" : this.getHours(),                   //小时
+                "m+" : this.getMinutes(),                 //分
+                "s+" : this.getSeconds(),                 //秒
+                "q+" : Math.floor((this.getMonth()+3)/3), //季度
+                "S"  : this.getMilliseconds()             //毫秒
+              };
+              if(/(y+)/.test(fmt)) {
+                fmt=fmt.replace(RegExp.$1, (this.getFullYear()+"").substr(4 - RegExp.$1.length));
+              }
+              for(var k in o) {
+                if(new RegExp("("+ k +")").test(fmt)) {
+                  fmt = fmt.replace(RegExp.$1, (RegExp.$1.length==1) ? (o[k]) : (("00"+ o[k]).substr((""+ o[k]).length)));
+                }
+              }
+              return fmt;
+            };
+        };
+    </script>
+</html>
