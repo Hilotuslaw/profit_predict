@@ -69,7 +69,7 @@ def residuals_pow(p: Tuple[float, float], y: float, x: float) -> float:
 
     :param p: 幂函数的参数(p_a, p_b)。
     :param y: 观测值。
-    :param x: 幂函数的参数(p_a, p_b)。
+    :param x: 输入值。
     :return: 输入值。
     """
     ret = y - func_pow(x, p)
